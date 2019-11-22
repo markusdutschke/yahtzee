@@ -54,7 +54,7 @@ def main2_simpleBenchmark():
     print('Benchmarking players:')
     for player in [PlayerRandom(), PlayerOneShotHero()]:
         m, s = benchmark(player, nIter=100)
-        print('\t{:20}: {:.1f} +/- {:.1f}'.format(player.name, m, s))
+        print('\t{:30} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
 
 
 

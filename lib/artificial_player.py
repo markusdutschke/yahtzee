@@ -144,7 +144,7 @@ class AbstractPlayer(ABC):  # abstract class
     
 class PlayerRandom(AbstractPlayer):
     """This player behaves completely random"""
-    name = 'Random Player'
+    name = 'Completely Random Player'
     def fct_roll(self, scoreBoard, dice, attempt):
         return np.random.choice([True, False], 5)
     def fct_cat(self, scoreBoard, dice):
