@@ -5,9 +5,10 @@ Created on Fri Nov 22 10:50:06 2019
 
 @author: user
 """
+import numpy as np
 import sys; sys.path.append('./lib/')
 from comfct.debug import lp
-from yahtzee import Dice, ScoreBoard
+from yahtzee import Dice, ScoreBoard, Game
 
 
 
@@ -43,7 +44,18 @@ def getCatSelBinInfo( scoreBoard, dice):
 
 
 
+
 def main1_playARandomGame():
+    
+    def fctRoll(scoreBoard, dice, att):
+        return np.random.choice([True, False], 5)
+    def fctCat(scoreBoard, dice):
+        return np.random.choice(scoreBoard.open_cats())
+    
+    game = Game(fctRoll, fctCat)
+#    game = Game(lambda x, y, z: [True]*5, lambda sb, dice: sb.open_cats()[-1])
+    game.print()
+    assert False
     d = Dice()
     lp(d)
     d.roll( [True, True, False, False, True])

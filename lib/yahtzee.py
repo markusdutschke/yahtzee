@@ -5,7 +5,11 @@ Created on Fri Nov 22 10:53:36 2019
 
 @author: user
 """
+# --- imports
 import numpy as np
+import pandas as pd
+from comfct.debug import lp
+from copy import deepcopy
 
 def roll_dice(nDice=5):
     #dice = np.empty(shape=nDice,dtype=int)
@@ -20,26 +24,44 @@ class Dice:
     
     def __init__(self, arr=None):
         if arr is None:
-            self.vals = np.random.randint(1,6,5)
+            self.vals = np.sort(np.random.randint(1,6,5))
         else:
             assert len(arr) == 5
-            self.vals = np.array(arr)
+            self.vals = np.sort(arr)
     
     def roll(self, arr):
         """arr is a boolen array"""
         assert len(arr) == 5
+#        lp(self.vals)
+#        lp(arr)
         newVals = np.random.randint(1, 6, np.sum(arr))
         self.vals[arr] = newVals
+        self.vals = np.sort(self.vals)
+#        lp(self.vals)
     
     def __str__(self):
         return ', '.join(['{:.0f}'.format(val) for val in self.vals])
+    
+    def to_str(self, mask = [False]*5):
+        """mask : bool array of len 5; marks if dice is intended fore reroll"""
+        _str = ','.join(
+                [str(v) + 'r' if b else str(v) for v, b in zip(self.vals, mask)])
+        return '[{:}]'.format(_str)
+#        _str = ''
+#        for v, b in zip(self.vals, mask):
+#            suf = 'r' if b else ''
+#            _str += str(v) + suf
+#        return _str
+    
+    def copy(self):
+        return deepcopy(self)
     
     def compress(self):
         """Result of the 5 dice is encoded as a 5 digit integer"""
         pass
 
 class ScoreBoard:
-    categories=[
+    cats = [
             'Aces','Twos','Threes','Fours','Fives','Sixes',
             'Three Of A Kind','Four Of A Kind','Full House',
             'Small Straight','Large Straight','Yahtzee','Chance']
@@ -49,10 +71,11 @@ class ScoreBoard:
     def add(self, dice, posCat):
         """dice: Dice instance; posCat: int index for the category of the sb"""
         #dice: np.ndarray, posCat int
-        assert isinstance(posCat,int)
+#        assert isinstance(posCat, int)
+        assert np.issubdtype(type(posCat), np.signedinteger)
         
         assert np.ma.getmask(self.scores)[posCat]==1 \
-        , str(self.scores)+ '\n'+str(self.getOpenCategories()) \
+        , str(self.scores)+ '\n'+str(self.open_cats_mask()) \
         +'\nposCat='+str(posCat)+'\ntry to add to used category!'
         dice = dice.vals
 #        assert isinstance(diceInt,int)
@@ -99,8 +122,15 @@ class ScoreBoard:
         if np.ma.getmask(self.scores)[posCat]:
             self.scores[posCat]=0
             
-    def getOpenCategories(self):
+    def open_cats_mask(self):
         return np.ma.getmask(self.scores).astype(int)
+    
+    def open_cats(self):
+        inds = np.array(list(range(len(self.cats))))
+#        lp(inds)
+#        lp(self.scores.mask)
+        return inds[self.scores.mask]
+#        return np.maA.getmask(self.scores).astype(int)
 
     def getUpperSum(self):
         uSum=np.sum(self.scores[:6])
@@ -124,7 +154,7 @@ class ScoreBoard:
             if ii == 6:
                 print('-'*34)
             score = '--' if self.scores.mask[ii] else str(self.scores[ii])
-            print('{:16}: {:2}'.format(ScoreBoard.categories[ii], score))
+            print('{:16}: {:2}'.format(ScoreBoard.cats[ii], score))
         print('='*34)
         print(' '*10 + 'Score: ' + str(self.getSum()) + ' '*10)
         print('='*34)
@@ -170,15 +200,61 @@ class Game:
         >>> [x + 3 for x in a]
         [4, 5, 6]
         """
-        log = []
+        self.log = []
         sb = ScoreBoard()
         for cc in range(0,13):
-            dice0 = Dice()
-            deci0 = fctRoll(sb, dice, 0)
-            dice1 = dice.roll(deci0)
-            deci1 = fctRoll(sb, dice, 1)
-            dice2 = dice.roll(fctRoll(sb, dice, 1))
-            deci2 = fctCat(sb, dice)
-            sb.add(dice2, deci2)
+            curLog = [sb]
             
-            log += [(dice0, deci0, dice1, deci1, dice2, deci2)]
+            dice = Dice()
+            deci = fctRoll(sb, dice, 0)
+            curLog += [dice.copy(), deci]
+            
+            dice.roll(deci)
+            deci = fctRoll(sb, dice, 1)
+            curLog += [dice.copy(), deci]
+            
+            dice.roll(deci)
+            deci = fctCat(sb, dice)
+            sb.add(dice, deci)
+            curLog += [dice.copy(), deci]
+            
+            self.log += [curLog]
+        self.sb = sb
+        
+    def print(self):
+        
+        # sort log by categories
+        dfLog = pd.DataFrame(
+                self.log, columns=['scores',
+                                   'dice0', 'deci0',
+                                   'dice1', 'deci1',
+                                   'dice2', 'deci2'])
+        dfLog.index.name ='round'
+        dfLog = dfLog.reset_index()
+
+        dfLog =dfLog.set_index('deci2')
+
+        dfLog = dfLog.sort_index()
+
+        n = 36
+        print('='*n + ' Score Board ' + '='*n)
+        print('{:16}: {:5} | round - dice (r = reroll)'
+              .format('Category', 'Score'))
+        print('-'*(2*n + 13))
+        
+        for ii in range(13):
+            if ii == 6:
+                print('-'*(2*n+13))
+            score = str(self.sb.scores[ii])
+            line = '{:16}: {:5} | {:>5} - '.format(ScoreBoard.cats[ii], score,
+                    str(dfLog.loc[ii, 'round']))
+            for rr in [0,1]:
+                dice = dfLog.loc[ii, 'dice' + str(rr)]
+                deci = dfLog.loc[ii, 'deci' + str(rr)]
+                line += '{:} -> '.format(dice.to_str(deci))
+            line += dfLog.loc[ii, 'dice2'].to_str()
+            print(line)
+        
+        print('='*(2*n+13))
+        print(' '*(n+0) + ' Score: {:5d}'.format(self.sb.getSum()))
+        print('='*(2*n+13))
