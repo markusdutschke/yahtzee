@@ -13,3 +13,12 @@ print(a)
 #print(np.sort(a, axis=0))
 print( sorted(a, key=lambda x: x[0]))
 
+for a, b in {'a':1, 'b':2}.items():
+    print(a,'-',b)
+    
+
+a = [1,2,3]
+print(a)
+a.extend(range(4))
+print(a)
+

@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from yahtzee import Game
 
-def benchmark(player, nIter=100):
+def benchmark(player, nGames=100):
     """Benchmarks Yahtzee decision making models.
     
     Extended description of function.
@@ -31,7 +31,7 @@ def benchmark(player, nIter=100):
         returns : 0 <= int <= 12
     player : Player
         Artificial player, subclass of AbstractPlayer
-    nIter : int
+    nGames : int
         number of trials
     
     Returns
@@ -55,7 +55,7 @@ def benchmark(player, nIter=100):
     [4, 5, 6]
     """
     scores = []
-    for ii in range(nIter):
+    for ii in range(nGames):
         game = Game(player)
         scores += [game.sb.getSum()]
     return np.mean(scores), np.std(scores)
@@ -142,9 +142,9 @@ class AbstractPlayer(ABC):  # abstract class
         """
         pass
     
-class PlayerRandom(AbstractPlayer):
+class PlayerRandomCrap(AbstractPlayer):
     """This player behaves completely random"""
-    name = 'Completely Random Player'
+    name = 'Random Crap'
     def fct_roll(self, scoreBoard, dice, attempt):
         return np.random.choice([True, False], 5)
     def fct_cat(self, scoreBoard, dice):
@@ -163,3 +163,22 @@ class PlayerOneShotHero(AbstractPlayer):
 #        lp(bench)
         bench = sorted(bench, key=lambda x: x[0])
         return bench[-1][1]
+
+class PlayerOneShotAI(AbstractPlayer):
+    """No strategic dice reroll, but self learning category assignment"""
+    name = 'The One Shot AI'
+    def fct_roll(self, scoreBoard, dice, attempt):
+        return [False]*5
+    def fct_cat(self, scoreBoard, dice):  # TODO
+        bench = []
+        for cat in scoreBoard.open_cats():
+            bench += [(scoreBoard.check_points(dice, cat), cat)]
+        bench = sorted(bench, key=lambda x: x[0])
+        return bench[-1][1]
+    def train(self, nGames):
+        """use:
+            MLPRegressor
+            partial_fit
+            https://www.programcreek.com/python/example/93778/sklearn.neural_network.MLPRegressor
+        """
+        

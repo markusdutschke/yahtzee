@@ -9,7 +9,7 @@ import numpy as np
 import sys; sys.path.append('./lib/')
 from comfct.debug import lp
 from yahtzee import Dice, ScoreBoard, Game
-from artificial_player import benchmark, PlayerRandom, PlayerOneShotHero
+from artificial_player import benchmark, PlayerRandomCrap, PlayerOneShotHero
 
 
 
@@ -47,13 +47,13 @@ def getCatSelBinInfo( scoreBoard, dice):
 
 
 def main1_playARandomGame():
-    game = Game(PlayerRandom())
+    game = Game(PlayerRandomCrap())
     game.print()
 
 def main2_simpleBenchmark():
     print('Benchmarking players:')
-    for player in [PlayerRandom(), PlayerOneShotHero()]:
-        m, s = benchmark(player, nIter=100)
+    for player in [PlayerRandomCrap(), PlayerOneShotHero()]:
+        m, s = benchmark(player, nGames=100)
         print('\t{:30} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
 
 
