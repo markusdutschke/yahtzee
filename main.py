@@ -55,24 +55,24 @@ def main1_playARandomGame():
     game = Game(fctRoll, fctCat)
 #    game = Game(lambda x, y, z: [True]*5, lambda sb, dice: sb.open_cats()[-1])
     game.print()
-    assert False
-    d = Dice()
-    lp(d)
-    d.roll( [True, True, False, False, True])
-    lp(d)
-
-    sb = ScoreBoard()
-    for cc in range(0,13):
-        print('STARTING ROUND NUMBER', cc)
-        dice = Dice()
-        print('1st dice:', dice)
-        dice.roll( [True, True, False, False, True])
-        print('2nd dice:', dice)
-        dice.roll( [True, False, False, False, False])
-        print('3rd dice:', dice)
-        sb.add(dice,cc)
-        sb.print()
-        print()
+#    assert False
+#    d = Dice()
+#    lp(d)
+#    d.roll( [True, True, False, False, True])
+#    lp(d)
+#
+#    sb = ScoreBoard()
+#    for cc in range(0,13):
+#        print('STARTING ROUND NUMBER', cc)
+#        dice = Dice()
+#        print('1st dice:', dice)
+#        dice.roll( [True, True, False, False, True])
+#        print('2nd dice:', dice)
+#        dice.roll( [True, False, False, False, False])
+#        print('3rd dice:', dice)
+#        sb.add(dice,cc)
+#        sb.print()
+#        print()
 
 
 
