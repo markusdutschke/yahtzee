@@ -9,6 +9,7 @@ import numpy as np
 import sys; sys.path.append('./lib/')
 from comfct.debug import lp
 from yahtzee import Dice, ScoreBoard, Game
+from artificial_player import benchmark, PlayerRandom, PlayerOneShotHero
 
 
 
@@ -46,36 +47,19 @@ def getCatSelBinInfo( scoreBoard, dice):
 
 
 def main1_playARandomGame():
-    
-    def fctRoll(scoreBoard, dice, att):
-        return np.random.choice([True, False], 5)
-    def fctCat(scoreBoard, dice):
-        return np.random.choice(scoreBoard.open_cats())
-    
-    game = Game(fctRoll, fctCat)
-#    game = Game(lambda x, y, z: [True]*5, lambda sb, dice: sb.open_cats()[-1])
+    game = Game(PlayerRandom())
     game.print()
-#    assert False
-#    d = Dice()
-#    lp(d)
-#    d.roll( [True, True, False, False, True])
-#    lp(d)
-#
-#    sb = ScoreBoard()
-#    for cc in range(0,13):
-#        print('STARTING ROUND NUMBER', cc)
-#        dice = Dice()
-#        print('1st dice:', dice)
-#        dice.roll( [True, True, False, False, True])
-#        print('2nd dice:', dice)
-#        dice.roll( [True, False, False, False, False])
-#        print('3rd dice:', dice)
-#        sb.add(dice,cc)
-#        sb.print()
-#        print()
+
+def main2_simpleBenchmark():
+    print('Benchmarking players:')
+    for player in [PlayerRandom(), PlayerOneShotHero()]:
+        m, s = benchmark(player, nIter=100)
+        print('\t{:20}: {:.1f} +/- {:.1f}'.format(player.name, m, s))
+
 
 
 
 
 if __name__== "__main__":
-    main1_playARandomGame()
+#    main1_playARandomGame()
+    main2_simpleBenchmark()

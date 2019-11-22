@@ -67,36 +67,31 @@ class ScoreBoard:
             'Small Straight','Large Straight','Yahtzee','Chance']
     def __init__(self):
         self.scores=np.ma.masked_array(np.empty(shape=13),mask=True,dtype=int)
-        
-    def add(self, dice, posCat):
-        """dice: Dice instance; posCat: int index for the category of the sb"""
-        #dice: np.ndarray, posCat int
-#        assert isinstance(posCat, int)
-        assert np.issubdtype(type(posCat), np.signedinteger)
-        
-        assert np.ma.getmask(self.scores)[posCat]==1 \
-        , str(self.scores)+ '\n'+str(self.open_cats_mask()) \
-        +'\nposCat='+str(posCat)+'\ntry to add to used category!'
+    
+    def check_points(self, dice, cat):
+        """Just check how many points one would get by assigning dice
+        to category number cat
+        dice:Dice
+        cat: int.
+        """
+#        lp(dice, type(dice))
         dice = dice.vals
-#        assert isinstance(diceInt,int)
-        #convert dice to np.ndarray of len 5
-#        dice=np.empty(shape=5,dtype=int)
-#        for ii in range(0,5):
-#            dice[-ii]=diceInt%10
-#            diceInt=diceInt//10
-        if posCat>=0 and posCat<=5:
-            self.scores[posCat]=np.sum(dice[dice==(posCat+1)])
-        elif posCat==6:
+        assert self.scores.mask[cat], (
+                'Mask must be True is dice should be assigned')
+        score = 0
+        if cat>=0 and cat<=5:
+            score=np.sum(dice[dice==(cat+1)])
+        elif cat==6:
             if np.amax(np.bincount(dice))>=3:
-                self.scores[posCat]=np.sum(dice)
-        elif posCat==7:
+                score=np.sum(dice)
+        elif cat==7:
             if np.amax(np.bincount(dice))>=4:
-                self.scores[posCat]=np.sum(dice)
-        elif posCat==8:
+                score=np.sum(dice)
+        elif cat==8:
             sd=np.sort(np.bincount(dice))
             if (sd[-1]==3 and sd[-2]==2) or sd[-1]==5:
-                self.scores[posCat]=25
-        elif posCat==9:
+                score=25
+        elif cat==9:
             sd=np.bincount(dice)
             lenStraight=0
             for ii in range(0,len(sd)):
@@ -105,22 +100,43 @@ class ScoreBoard:
                 else:
                     lenStraight=0
                 if lenStraight>=4:
-                    self.scores[posCat]=30
+                    score=30
                     break
-        elif posCat==10:
+        elif cat==10:
             sd=np.where(np.bincount(dice)>0,1,0)
             if np.sum(sd)==5 and (not (dice==1).any() or not (dice==6).any()):
-                self.scores[posCat]=40
-        elif posCat==11:
+                score=40
+        elif cat==11:
             if np.amax(np.bincount(dice))==5:
-                self.scores[posCat]=50
-        elif posCat==12:
-            self.scores[posCat]=np.sum(dice)  
+                score=50
+        elif cat==12:
+            score=np.sum(dice)
         else:
-            assert False, 'invalid category position, posCat='+str(posCat)
+            assert False, 'invalid category position, cat='+str(cat)
+        return score
+    
+    
+    def add(self, dice, cat):
+        """dice: Dice instance; posCat: int index for the category of the sb"""
+        #dice: np.ndarray, posCat int
+#        assert isinstance(posCat, int)
+        assert np.issubdtype(type(cat), np.signedinteger)
+        
+        assert np.ma.getmask(self.scores)[cat]==1 \
+        , str(self.scores)+ '\n'+str(self.open_cats_mask()) \
+        +'\nposCat='+str(cat)+'\ntry to add to used category!'
+#        dice = dice.vals
+        self.scores[cat] = self.check_points(dice, cat)
+#        assert isinstance(diceInt,int)
+        #convert dice to np.ndarray of len 5
+#        dice=np.empty(shape=5,dtype=int)
+#        for ii in range(0,5):
+#            dice[-ii]=diceInt%10
+#            diceInt=diceInt//10
+        
             
-        if np.ma.getmask(self.scores)[posCat]:
-            self.scores[posCat]=0
+#        if np.ma.getmask(self.scores)[cat]:
+#            self.scores[cat]=0
             
     def open_cats_mask(self):
         return np.ma.getmask(self.scores).astype(int)
@@ -163,7 +179,7 @@ class ScoreBoard:
 class Game:
     """Stores a complete game"""
     
-    def __init__(self, fctRoll, fctCat):
+    def __init__(self, player):
         """Plays and stores a Yahtzee game.
         
         Extended description of function.
@@ -182,6 +198,8 @@ class Game:
             arg1 : ScoreBoard
             arg2 : Dice
             returns : 0 <= int <= 12
+        player : Player
+            Artificial player, subclass of AbstractPlayer
         Returns
         -------
         Game
@@ -206,15 +224,15 @@ class Game:
             curLog = [sb]
             
             dice = Dice()
-            deci = fctRoll(sb, dice, 0)
+            deci = player.fct_roll(sb, dice, 0)
             curLog += [dice.copy(), deci]
             
             dice.roll(deci)
-            deci = fctRoll(sb, dice, 1)
+            deci = player.fct_roll(sb, dice, 1)
             curLog += [dice.copy(), deci]
             
             dice.roll(deci)
-            deci = fctCat(sb, dice)
+            deci = player.fct_cat(sb, dice)
             sb.add(dice, deci)
             curLog += [dice.copy(), deci]
             
