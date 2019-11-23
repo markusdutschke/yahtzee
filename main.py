@@ -9,7 +9,7 @@ import numpy as np
 import sys; sys.path.append('./lib/')
 from comfct.debug import lp
 from yahtzee import Dice, ScoreBoard, Game
-from artificial_player import benchmark, PlayerRandomCrap, PlayerOneShotHero
+from bot import benchmark, PlayerRandomCrap, PlayerOneShotHero
 
 
 

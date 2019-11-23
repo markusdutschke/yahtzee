@@ -221,22 +221,22 @@ class Game:
         self.log = []
         sb = ScoreBoard()
         for cc in range(0,13):
-            curLog = [sb]
+            roundLog = [sb]
             
             dice = Dice()
             deci = player.fct_roll(sb, dice, 0)
-            curLog += [dice.copy(), deci]
+            roundLog += [dice.copy(), deci]
             
             dice.roll(deci)
             deci = player.fct_roll(sb, dice, 1)
-            curLog += [dice.copy(), deci]
+            roundLog += [dice.copy(), deci]
             
             dice.roll(deci)
             deci = player.fct_cat(sb, dice)
             sb.add(dice, deci)
-            curLog += [dice.copy(), deci]
+            roundLog += [dice.copy(), deci]
             
-            self.log += [curLog]
+            self.log += [roundLog]
         self.sb = sb
         
     def print(self):
@@ -276,3 +276,7 @@ class Game:
         print('='*(2*n+13))
         print(' '*(n+0) + ' Score: {:5d}'.format(self.sb.getSum()))
         print('='*(2*n+13))
+    
+    @property
+    def score(self):
+        return self.sb.getSum()
