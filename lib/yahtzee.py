@@ -28,6 +28,17 @@ class Dice:
         else:
             assert len(arr) == 5
             self.vals = np.sort(arr)
+#    # trivial iteration for lst = list(game) functionality
+#    # https://www.programiz.com/python-programming/iterator
+#    def __iter__(self):
+#        self.isNext = True
+#        return self
+#    def __next__(self):
+#        if self.isNext:
+#            self.isNext = False
+#            return self
+#        else:
+#            raise StopIteration
     
     def roll(self, arr):
         """arr is a boolen array"""
@@ -67,6 +78,28 @@ class ScoreBoard:
             'Small Straight','Large Straight','Yahtzee','Chance']
     def __init__(self):
         self.scores=np.ma.masked_array(np.empty(shape=13),mask=True,dtype=int)
+#    # trivial iteration for lst = list(game) functionality
+#    # https://www.programiz.com/python-programming/iterator
+#    def __iter__(self):
+#        self.isNext = True
+#        return self
+#    def __next__(self):
+#        if self.isNext:
+#            self.isNext = False
+#            return self
+#        else:
+#            raise StopIteration
+    
+    @property
+    def data(self):
+        return self.scores.data
+    @property
+    def mask(self):
+        return self.scores.mask
+    
+    @property
+    def score(self):
+        return self.getSum()
     
     def check_points(self, dice, cat):
         """Just check how many points one would get by assigning dice
@@ -224,20 +257,32 @@ class Game:
             roundLog = [sb]
             
             dice = Dice()
-            deci = player.fct_roll(sb, dice, 0)
+            deci = player.choose_roll(sb, dice, 0)
             roundLog += [dice.copy(), deci]
             
             dice.roll(deci)
-            deci = player.fct_roll(sb, dice, 1)
+            deci = player.choose_roll(sb, dice, 1)
             roundLog += [dice.copy(), deci]
             
             dice.roll(deci)
-            deci = player.fct_cat(sb, dice)
+            deci = player.choose_cat(sb, dice)
             sb.add(dice, deci)
             roundLog += [dice.copy(), deci]
             
             self.log += [roundLog]
         self.sb = sb
+    
+#    # trivial iteration for lst = list(game) functionality
+#    # https://www.programiz.com/python-programming/iterator
+#    def __iter__(self):
+#        self.isNext = True
+#        return self
+#    def __next__(self):
+#        if self.isNext:
+#            self.isNext = False
+#            return self
+#        else:
+#            raise StopIteration
         
     def print(self):
         

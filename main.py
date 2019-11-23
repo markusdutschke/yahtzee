@@ -9,7 +9,7 @@ import numpy as np
 import sys; sys.path.append('./lib/')
 from comfct.debug import lp
 from yahtzee import Dice, ScoreBoard, Game
-from bot import benchmark, PlayerRandomCrap, PlayerOneShotHero
+from bot import benchmark, PlayerRandomCrap, PlayerOneShotHero, PlayerOneShotAI
 
 
 
@@ -55,11 +55,29 @@ def main2_simpleBenchmark():
     for player in [PlayerRandomCrap(), PlayerOneShotHero()]:
         m, s = benchmark(player, nGames=100)
         print('\t{:30} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
+        
 
-
+def main3_initLearningPlayer():
+#    player = PlayerOneShotAI()
+    player = PlayerOneShotAI(playerInit=PlayerOneShotHero(), nGamesInit=int(1e4))
+    
+    m, s = benchmark(player, nGames=100)
+    print('\t{:30} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
+    
+    nTT = 0  # n total trainings
+    trainingSchedule = [10, 90, 300, 600, 1e4, 1e4, 1e5, 1e5]
+    for nT in trainingSchedule:
+#        nT = int(nT)
+        nTT += nT
+        player.train(nGames=nT)
+    
+        m, s = benchmark(player, nGames=100)
+        name = player.name + ' after '+str(nTT) + ' games:'
+        print('\t{:30} {:.1f} +/- {:.1f}'.format(name+':', m, s))
 
 
 
 if __name__== "__main__":
 #    main1_playARandomGame()
     main2_simpleBenchmark()
+    main3_initLearningPlayer()
