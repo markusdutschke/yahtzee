@@ -53,7 +53,7 @@ def main1_playARandomGame():
 def main2_simpleBenchmark():
     print('Benchmarking players:')
     for player in [PlayerRandomCrap(), PlayerOneShotHero()]:
-        m, s = benchmark(player, nGames=100)
+        m, s = benchmark(player, nGames=1000)
         print('\t{:30} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
         
 
@@ -65,13 +65,13 @@ def main3_initLearningPlayer():
     print('\t{:30} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
     
     nTT = 0  # n total trainings
-    trainingSchedule = [10, 90, 300, 600, 1e4, 1e4, 1e5, 1e5]
+    trainingSchedule = [10, 90, 300, 600, 1e4, 1e4, 1e5, 1e5, 1e5, 1e5, 1e5, 1e5]
     for nT in trainingSchedule:
-#        nT = int(nT)
+        nT = int(nT)
         nTT += nT
         player.train(nGames=nT)
     
-        m, s = benchmark(player, nGames=100)
+        m, s = benchmark(player, nGames=1000)
         name = player.name + ' after '+str(nTT) + ' games:'
         print('\t{:30} {:.1f} +/- {:.1f}'.format(name+':', m, s))
 
