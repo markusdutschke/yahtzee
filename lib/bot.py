@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import random
 #np.random.seed(0)
-from yahtzee import Game
+from yahtzee import Game, ScoreBoard
 from sklearn.neural_network import MLPRegressor
 from sklearn.utils.validation import check_is_fitted
 from comfct.list import list_cast
@@ -287,12 +287,14 @@ class PlayerOneShotAI(AbstractPlayer):
     def __init__(
             self,
             regressor=MLPRegressor(hidden_layer_sizes=(30, 25, 20)),
+            debugLevel=0,
 #            playerInit=PlayerRandomCrap(),
 #            nGamesInit=1
             ):
         super().__init__()
         self.rgr = regressor
         self.nGames = 0
+        self.debugLevel = debugLevel
         
         # init regressor for adaptative fit
 #        games = [Game(playerInit) for ii in range(nGamesInit)]
@@ -307,10 +309,25 @@ class PlayerOneShotAI(AbstractPlayer):
     def choose_cat(self, scoreBoard, dice):
         """Takes only open categories."""
         assert self.nGames > 0, str(scoreBoard.print())
+        if self.debugLevel > 0:
+            print('='*60)
+            print('='*60)
+            scoreBoard.print()
+            print('DICE: ', dice)
+            
         opts = []
         for cat in scoreBoard.open_cats():
-            opts += [(cat, self.cat_predict(scoreBoard, dice, cat))]
+            score = self.cat_predict(scoreBoard, dice, cat)
+            assert len(score)==1
+            score = score[0]
+            opts += [(cat, score)]
+            if self.debugLevel > 0:
+                print('cat: {:}, score: {:.2f}'.format(
+                        ScoreBoard.cats[cat], score))
+#                print(323, ScoreBoard.cats[cat], score)
         opts = sorted(opts, key=lambda x: x[1])
+        if self.debugLevel > 0:
+            print('-> chose cat:',ScoreBoard.cats[opts[-1][0]])
         return opts[-1][0]
 #        cs = self.cat_predict(scoreBoard, dice)
 ##        cs = self.rgr.predict(self.cat_decision_parser(scoreBoard, dice))
@@ -433,6 +450,9 @@ class PlayerOneShotAI(AbstractPlayer):
                     players[0] = PlayerRandomCrap()
 #            lp(type(players), len(players))
             game = Game(players)
+#            for rl in game.log:
+#                rl[0].print()
+#                lp(rl[-2], 'cat', rl[-1])
 #            lp(self.name, self.n_features)
             X, y = self.cat_decision_parser(*self.games_to_cat_info(game))
 #            lp(X.shape, y.shape)
@@ -452,18 +472,19 @@ class PlayerAI_1SEnc_1(PlayerOneShotAI):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 13 + 4
+        return 13
     def encoder(self, scoreBoard, dice, cat):
         """Encodes a game situation (decision input) as
         array with elements in range 0 to 1.
         """
+        assert cat in scoreBoard.open_cats()  # put to LearningPlayer and call by super()
         x = np.zeros(shape=(self.n_features))
 
 #        for cc in scoreBoard.open_cats():
 #            x[cc] = scoreBoard.check_points(dice, cc) / 50
 #        x[-4:] = np.array(list(np.binary_repr(cat, width=4)))
         if cat in scoreBoard.open_cats():
-            x[cat] = scoreBoard.check_points(dice, cat) / 50
+            x[cat] = scoreBoard.check_points(dice, cat) # / 50
         
         return x
 
@@ -500,7 +521,7 @@ class PlayerAI_1SEnc_3(PlayerOneShotAI):
     name = 'AI_1SEnc_3'
     
     def __init__(
-            self, regressor=MLPRegressor(hidden_layer_sizes=(4, 4),
+            self, regressor=MLPRegressor(hidden_layer_sizes=(20, 15, 10, 5),
                                          )):
         super().__init__(regressor)
 #        lp(self.rgr.get_params())
@@ -511,7 +532,7 @@ class PlayerAI_1SEnc_3(PlayerOneShotAI):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 13 + 1
+        return 13 + 13 + 1
     def encoder(self, scoreBoard, dice, cat):
         """Encodes a game situation (decision input) as
         array with elements in range 0 to 1.
@@ -524,6 +545,6 @@ class PlayerAI_1SEnc_3(PlayerOneShotAI):
 #        x[-4:] = np.array(list(np.binary_repr(cat, width=4)))
 #        if cat in scoreBoard.open_cats():
         x[cat] = scoreBoard.check_points(dice, cat) / 50
-#        x[13:26] = scoreBoard.scores.mask.astype(int)  # avail. cats
+        x[13:26] = scoreBoard.scores.mask.astype(int)  # avail. cats
         x[-1] = scoreBoard.getSum()
         return x

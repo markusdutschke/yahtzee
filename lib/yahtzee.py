@@ -91,6 +91,8 @@ class ScoreBoard:
 #            return self
 #        else:
 #            raise StopIteration
+    def copy(self):
+        return deepcopy(self)
     
     @property
     def data(self):
@@ -266,7 +268,7 @@ class Game:
         self.log = []
         sb = ScoreBoard()
         for cc in range(0,13):
-            roundLog = [sb]
+            roundLog = [sb.copy()]
             
             dice = Dice()
             deci = next(player).choose_roll(sb, dice, 0)
