@@ -286,7 +286,7 @@ class Game:
             deci = plyr.choose_cat(sb, dice)
             try:
                 opts = plyr.eval_cats(sb, dice)
-                info = '; '.join([
+                info = '\n\t' + '\n\t'.join([
                         '{:}: {:.2f}'.format(ScoreBoard.cats[cat], score)
                         for cat, score in opts])
             except:

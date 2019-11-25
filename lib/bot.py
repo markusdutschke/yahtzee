@@ -618,17 +618,18 @@ class PlayerOneShotAI(AbstractPlayer):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 13 + 13 + 5 + 1
+        return 13
     def encoder(self, scoreBoard, dice, cat):
         """Encodes a game situation (decision input) as
         array with elements in range 0 to 1.
         """
         x = np.zeros(shape=(self.n_features))
-#        lp(scoreBoard.scores.data)
-        x[:13] = scoreBoard.scores.data / 50  # scores
-        x[13:26] = scoreBoard.scores.mask.astype(int)  # avail. cats
-        x[26:31] = (dice.vals -1) / 5  # dice
-        x[31] = cat
+        x[cat] = scoreBoard.check_points(dice, cat)
+##        lp(scoreBoard.scores.data)
+#        x[:13] = scoreBoard.scores.data / 50  # scores
+#        x[13:26] = scoreBoard.scores.mask.astype(int)  # avail. cats
+#        x[26:31] = (dice.vals -1) / 5  # dice
+#        x[31] = cat
         return x
         # hopefully learns bonus by itsself
 #        x[0, 31] = np.sum(roundLog[0].data[:6]) / 105  # upper sum for bonus
