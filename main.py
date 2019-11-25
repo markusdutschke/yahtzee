@@ -67,16 +67,17 @@ def main3_initLearningPlayer():
     print('Benchmark Intelligent Players:')
 #    players = [PlayerOneShotAI(), PlayerOneShortAISmartEnc()]
     players = [
+            bot.PlayerOneShotAI(),
 #            bot.PlayerAI_1SEnc_1(),
 #            bot.PlayerAI_1SEnc_1(),
 #            bot.PlayerAI_1SEnc_2(),
 #            bot.PlayerAI_1SEnc_2(),
-            bot.PlayerAI_1SEnc_3(),
+#            bot.PlayerAI_1SEnc_3(),
                ]
     
     nGames = [1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
     nGames = [10, 100, 200, 300, 400, 500]
-    nGames = [600]
+    nGames = [60]
     for nT in nGames:
         nT = int(nT)
 
@@ -93,9 +94,14 @@ def main3_initLearningPlayer():
         print('\t-')
     
     
+#    print(Game(player))
+#    print(str(Game(player), debugLevel=1))
+#    print(Game(player).__str__(debugLevel=1))
+    
     for player in players:
-        player.debugLevel = 1
-        Game(player).print()
+        print(Game(player).__str__(debugLevel=1))
+#        player.debugLevel = 1
+#        Game(player).print()
 
 
 

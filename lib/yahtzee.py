@@ -266,6 +266,7 @@ class Game:
         player = iter(players)
         
         self.log = []
+        self.catLog = []  # log for cat decision learning
         sb = ScoreBoard()
         for cc in range(0,13):
             roundLog = [sb.copy()]
@@ -278,10 +279,22 @@ class Game:
             deci = next(player).choose_roll(sb, dice, 1)
             roundLog += [dice.copy(), deci]
             
+            # choose cat
             dice.roll(deci)
-            deci = next(player).choose_cat(sb, dice)
+#            deci, info = next(player).choose_cat(sb, dice, debugLevel=1)
+            plyr = next(player)
+            deci = plyr.choose_cat(sb, dice)
+            try:
+                opts = plyr.eval_cats(sb, dice)
+                info = '; '.join([
+                        '{:}: {:.2f}'.format(ScoreBoard.cats[cat], score)
+                        for cat, score in opts])
+            except:
+                info = 'No info for ' + plyr.name
+            self.catLog += [(sb.copy(), dice, deci)]
             sb.add(dice, deci)
-            roundLog += [dice.copy(), deci]
+            roundLog += [dice.copy(), deci, info]
+            
             
             self.log += [roundLog]
         self.sb = sb
@@ -298,14 +311,14 @@ class Game:
 #        else:
 #            raise StopIteration
         
-    def print(self):
+    def print_depricated(self):
         
         # sort log by categories
         dfLog = pd.DataFrame(
                 self.log, columns=['scores',
                                    'dice0', 'deci0',
                                    'dice1', 'deci1',
-                                   'dice2', 'deci2'])
+                                   'dice2', 'deci2', 'info2'])
         dfLog.index.name ='round'
         dfLog = dfLog.reset_index()
 
@@ -335,6 +348,59 @@ class Game:
         print('='*(2*n+13))
         print(' '*(n+0) + ' Score: {:5d}'.format(self.sb.getSum()))
         print('='*(2*n+13))
+        
+    def __str__(self, debugLevel=0):
+        _str = ''
+        # sort log by categories
+        dfLog = pd.DataFrame(
+                self.log, columns=['scores',
+                                   'dice0', 'deci0',
+                                   'dice1', 'deci1',
+                                   'dice2', 'deci2', 'info2'])
+#        lp(dfLog['deci2'])
+        dfLog.index.name ='round'
+        
+        if debugLevel >= 1:
+            for ii in range(13):
+                _str += (
+                        'DICE: ' + str(dfLog.loc[ii,'dice2'])
+                        + ';\nEVAL: ' + str(dfLog.loc[ii,'info2'])
+                        + ';\nDECISION: ' + ScoreBoard.cats[dfLog.loc[ii,'deci2']]
+                        )
+                _str += '\n'
+        
+        dfLog = dfLog.reset_index()
+        dfLog =dfLog.set_index('deci2')
+        dfLog = dfLog.sort_index()
+        
+#        lp(dfLog['info2'])
+        
+        
+                
+
+        n = 36
+        _str += ('='*n + ' Score Board ' + '='*n +'\n')
+        _str += ('{:16}: {:5} | round - dice (r = reroll)\n'
+              .format('Category', 'Score'))
+        _str += ('-'*(2*n + 13) +'\n')
+        
+        for ii in range(13):
+            if ii == 6:
+                _str += ('-'*(2*n+13) +'\n')
+            score = str(self.sb.scores[ii])
+            line = '{:16}: {:5} | {:>5} - '.format(ScoreBoard.cats[ii], score,
+                    str(dfLog.loc[ii, 'round']))
+            for rr in [0,1]:
+                dice = dfLog.loc[ii, 'dice' + str(rr)]
+                deci = dfLog.loc[ii, 'deci' + str(rr)]
+                line += '{:} -> '.format(dice.to_str(deci))
+            line += dfLog.loc[ii, 'dice2'].to_str()
+            _str += (line +'\n')
+        
+        _str += ('='*(2*n+13) +'\n')
+        _str += (' '*(n+0) + ' Score: {:5d}\n'.format(self.sb.getSum()))
+        _str += ('='*(2*n+13) +'\n')
+        return _str
     
     @property
     def score(self):

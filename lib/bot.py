@@ -280,7 +280,7 @@ class PlayerOneShotHero(AbstractPlayer):
         bench = sorted(bench, key=lambda x: x[0])
         return bench[-1][1]
 
-class PlayerOneShotAI(AbstractPlayer):
+class PlayerOneShotAI_deprictaed(AbstractPlayer):
     """No strategic dice reroll, but self learning category assignment"""
     name = 'The One Shot AI'
 
@@ -458,6 +458,256 @@ class PlayerOneShotAI(AbstractPlayer):
 #            lp(X.shape, y.shape)
             self.rgr.partial_fit(X, y)
             self.nGames += 1
+
+class PlayerOneShotAI(AbstractPlayer):
+    """No strategic dice reroll, but self learning category assignment"""
+    name = 'The One Shot AI'
+
+    def __init__(
+            self,
+            regressor=MLPRegressor(hidden_layer_sizes=(30, 25, 20)),
+            debugLevel=0,
+            catMLParas={'lenReplayMem': 1000, 'lenMiniBatch': 10, 'gamma': .1}
+#            catReplayMemLen=1000,
+#            catMiniBatchSize=10,
+            
+#            playerInit=PlayerRandomCrap(),
+#            nGamesInit=1
+            ):
+        super().__init__()
+        self.rgr = regressor
+        self.nGames = 0
+        self.debugLevel = debugLevel
+        self.catMLParas = catMLParas
+        self.crm = []  # category replay memory
+#        self.miniBatchSize = miniBatchSize
+        
+        # init regressor for adaptative fit
+#        games = [Game(playerInit) for ii in range(nGamesInit)]
+#        X, y = self.cat_decision_parser(*self.games_to_cat_info(games))
+##        self.rgr.fit(X, y)
+#        self.rgr.partial_fit(X, y)
+        
+    def choose_roll(self, scoreBoard, dice, attempt):
+        return [False]*5
+    
+    # move to abstract LearningPlayer
+    def choose_cat(self, scoreBoard, dice, debugLevel=0):
+        """Takes only open categories."""
+        assert self.nGames > 0, str(scoreBoard.print())
+#        if self.debugLevel > 0:
+#            print('='*60)
+#            print('='*60)
+#            scoreBoard.print()
+#            print('DICE: ', dice)
+            
+#        opts = []
+#        for cat in scoreBoard.open_cats():
+#            score = self.cat_predict(scoreBoard, dice, cat)
+#            assert len(score)==1
+#            score = score[0]
+#            opts += [(cat, score)]
+##            if self.debugLevel > 0:
+##                print('cat: {:}, score: {:.2f}'.format(
+##                        ScoreBoard.cats[cat], score))
+##                print(323, ScoreBoard.cats[cat], score)
+#        opts = sorted(opts, key=lambda x: x[1])
+##        if self.debugLevel > 0:
+##            print('-> chose cat:',ScoreBoard.cats[opts[-1][0]])
+        
+        opts = self.eval_cats(scoreBoard, dice)
+        
+        if debugLevel >0:
+            info = '; '.join([
+                    '{:}: {:.2f}'.format(ScoreBoard.cats[cat], score)
+                    for cat, score in opts])
+            lp(info)
+        return opts[0][0]
+#        cs = self.cat_predict(scoreBoard, dice)
+##        cs = self.rgr.predict(self.cat_decision_parser(scoreBoard, dice))
+#        cs = np.ma.masked_array(cs, mask=np.invert(scoreBoard.mask))
+#        return np.argmax(cs)
+    
+    def eval_cats(self, scoreBoard, dice):
+        """retuns list of (cat nr, predicted score)
+        First element has highest score"""
+        opts = []
+        for cat in scoreBoard.open_cats():
+            score = self.cat_predict(scoreBoard, dice, cat)
+            assert len(score)==1
+            score = score[0]
+            opts += [(cat, score)]
+#        lp(opts)
+        opts = sorted(opts, key=lambda x: x[1], reverse=True)
+#        lp(opts)
+#        assert False
+        return opts
+    
+    def cat_predict(self, scoreBoard, dice, cat):
+#        X, y = self.cat_decision_parser(scoreBoard, dice, cat)
+#        lp(X)
+        x = self.encoder(scoreBoard, dice, cat).reshape(1, -1)
+        return self.rgr.predict(x)
+    
+    def games_to_cat_replay_memory(self, games):
+        games = list_cast(games)
+        for game in games:
+            for rr in range(12):
+                sb1, dice1, cat1 = game.catLog[rr]
+                sb2, dice2, cat2 = game.catLog[rr+1]
+                sc = sb2.getSum() - sb1.getSum()
+                self.crm += [(sb1, dice1, cat1, sc, sb2, dice2)]
+            sb1, dice1, deci1 = game.catLog[12]
+            sc = game.sb.getSum() - sb1.getSum()
+            self.crm += [(sb1, dice1, cat1, sc)]
+        self.crm = self.crm[-self.catMLParas['lenReplayMem']:]
+    
+    def xy_from_crm(self, crmElem):
+        assert len(crmElem) in [4,6]
+        sb1, dice1, cat1, sc = crmElem[:4]
+        
+        x = self.encoder(sb1, dice1, cat1)
+        y = sc
+        if len(crmElem) == 6 and self.nGames > 0:
+            sb2, dice2 = crmElem[4:]
+            opts = self.eval_cats(sb2, dice2)
+            y += self.catMLParas['gamma'] * opts[0][1]
+        return x, y
+    
+#    def games_to_cat_info(self, games):
+#        """Extracts relevant information for category prediction
+#        from the games log
+#        """
+#        games = list_cast(games)
+#        scoreBoards = [game.log[rr][0] for game in games for rr in range(13)]
+#        dices = [game.log[rr][-2] for game in games for rr in range(13)]
+#        cats = [game.log[rr][-1] for game in games for rr in range(13)]
+#        return scoreBoards, dices, cats
+#    
+#    def cat_decision_parser(self, scoreBoards, dices, cats):
+#        """Prepares X, y tupes for regressor fit
+#        based on relevant information from games_to_cat_info
+#        cat : int
+#        """
+#        scoreBoards = list_cast(scoreBoards)
+#        lp(dices)
+#        dices = list_cast(dices)
+#        cats = list_cast(cats)
+#        assert len(scoreBoards) == len(dices) == len(cats)
+#        n_samples = len(scoreBoards)
+##        lp(n_samples, self.n_features)
+##        a = np.empty(shape=(13,31))
+#        X = np.empty(shape=(n_samples, self.n_features))
+#        y = np.empty(shape=(n_samples,))
+#        for ind in range(n_samples):
+##        for ind, (scoreBoard, dice) in enumerate(zip(scoreBoards, dices)):
+##            gs = game.score
+##            for rr, roundLog in enumerate(games.log):
+##                ind = gg*13 + rr
+##            scoreBoard.print()
+#            scoreBoard = scoreBoards[ind]
+#            dice = dices[ind]
+#            cat = cats[ind]
+#            lp(dice, type(dice))
+#            X[ind, :] = self.encoder(scoreBoard, dice, cat)
+#            y[ind] = scoreBoard.score
+#        return X, y
+    
+    @property
+    def n_features(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 13 + 13 + 5 + 1
+    def encoder(self, scoreBoard, dice, cat):
+        """Encodes a game situation (decision input) as
+        array with elements in range 0 to 1.
+        """
+        x = np.zeros(shape=(self.n_features))
+#        lp(scoreBoard.scores.data)
+        x[:13] = scoreBoard.scores.data / 50  # scores
+        x[13:26] = scoreBoard.scores.mask.astype(int)  # avail. cats
+        x[26:31] = (dice.vals -1) / 5  # dice
+        x[31] = cat
+        return x
+        # hopefully learns bonus by itsself
+#        x[0, 31] = np.sum(roundLog[0].data[:6]) / 105  # upper sum for bonus
+    
+    def train(self, nGames,
+              trainerEnsemble=PlayerEnsemble(
+                      [(1, PlayerRandomCrap())]
+                      )):
+        """Training the Player with nGames and based on the trainers moves.
+    
+        Extended description of function.
+    
+        Parameters
+        ----------
+        nGames : int
+            Nomber of games
+        trainerEnsemble : PlayerEnsemble
+            Integer represents the weight of the specici players moves
+            player is someone doing decisions; None is self
+    
+        Returns
+        -------
+        bool
+            Description of return value
+    
+        See Also
+        --------
+        otherfunc : some related other function
+    
+        Examples
+        --------
+        These are written in doctest format, and should illustrate how to
+        use the function.
+    
+        >>> a=[1,2,3]
+        >>> [x + 3 for x in a]
+        [4, 5, 6]
+        """
+        """use:
+            MLPRegressor
+            partial_fit
+            https://www.programcreek.com/python/example/93778/sklearn.neural_network.MLPRegressor
+        """
+#        plys = [tr[1] for tr in trainers]
+#        probs = [tr[0] for tr in trainers]
+        
+        for gg in range(nGames):
+#            player =A np.random.choice(plys, p=probs)
+            players = trainerEnsemble.randGameSet()
+#            lp(type(player), len(player))
+#            if player is None:
+#                player = self
+#            lp(type(player), len(player))
+            if hasattr(players[0], 'nGames'):
+                if players[0].nGames <= 0:
+                    players[0] = PlayerRandomCrap()
+#            lp(type(players), len(players))
+            game = Game(players)
+            
+            self.games_to_cat_replay_memory(game)
+            #create miniBatch
+            n_samples = self.catMLParas['lenMiniBatch']
+            X = np.empty(shape=(n_samples, self.n_features))
+            y = np.empty(shape=(n_samples,))
+            for ind in range(n_samples):
+                crmElem = np.random.choice(self.crm)
+                xy = self.xy_from_crm(crmElem)
+                X[ind, :] = xy[0]
+                y[ind] = xy[1]
+
+#            scoreBoards, dices, cats = self.games_to_cat_info(game)
+#            lp(scoreBoards)
+#            lp(dices)
+#            lp(cats)
+#            X, y = self.cat_decision_parser(scoreBoards, dices, cats)
+
+            self.rgr.partial_fit(X, y)
+            self.nGames += 1
+
 
 class PlayerAI_1SEnc_1(PlayerOneShotAI):
     name = 'AI_1SEnc_1'
