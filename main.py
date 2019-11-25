@@ -119,7 +119,7 @@ def main3_initLearningPlayer():
 
 
 if __name__== "__main__":
-    np.random.seed(1)
+    np.random.seed(2)
 #    main1_playARandomGame()
     main2_simpleBenchmark()
     main3_initLearningPlayer()

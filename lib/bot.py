@@ -468,7 +468,7 @@ class PlayerOneShotAI(AbstractPlayer):
             self,
             regressor=MLPRegressor(hidden_layer_sizes=(30, 25, 20)),
 #            debugLevel=0,
-            catMLParas={'lenReplayMem': 3000, 'lenMiniBatch': 50, 'gamma': .95}
+            catMLParas={'lenReplayMem': 200, 'lenMiniBatch': 30, 'gamma': .95}
 #            catReplayMemLen=1000,
 #            catMiniBatchSize=10,
             
@@ -558,9 +558,15 @@ class PlayerOneShotAI(AbstractPlayer):
                 sb2, dice2, cat2 = game.catLog[rr+1]
                 sc = sb2.getSum() - sb1.getSum()
                 self.crm += [(sb1, dice1, cat1, sc, sb2, dice2)]
+                
             sb1, dice1, deci1 = game.catLog[12]
             sc = game.sb.getSum() - sb1.getSum()
             self.crm += [(sb1, dice1, cat1, sc)]
+            
+        
+        
+    def cat_replay_memory_trunc(self):
+        self.crm = sorted(self.crm, key=lambda x: x[3])  # sort by score
         self.crm = self.crm[-self.catMLParas['lenReplayMem']:]
     
     def xy_from_crm(self, crmElem):
@@ -820,6 +826,7 @@ class PlayerOneShotAI(AbstractPlayer):
 #            X, y = self.cat_decision_parser(scoreBoards, dices, cats)
 
             self.rgr.partial_fit(X, y)
+            self.cat_replay_memory_trunc()
             self.nGames += 1
 
 
