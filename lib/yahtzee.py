@@ -26,7 +26,7 @@ class Dice:
     
     def __init__(self, arr=None):
         if arr is None:
-            self.vals = np.sort(np.random.randint(1,6,5))
+            self.vals = np.sort(np.random.randint(1,7,5))
         else:
             assert len(arr) == 5
             self.vals = np.sort(arr)
@@ -47,7 +47,7 @@ class Dice:
         assert len(arr) == 5
 #        lp(self.vals)
 #        lp(arr)
-        newVals = np.random.randint(1, 6, np.sum(arr))
+        newVals = np.random.randint(1, 7, np.sum(arr))
         self.vals[arr] = newVals
         self.vals = np.sort(self.vals)
 #        lp(self.vals)
@@ -151,6 +151,22 @@ class ScoreBoard:
         else:
             assert False, 'invalid category position, cat='+str(cat)
         return score
+    
+    def check_points_max(self, cat):
+        maxPnts = {0: 5,
+                   1: 10,
+                   2: 15,
+                   3: 20,
+                   4: 25,
+                   5: 30,
+                   6: 30,
+                   7: 30,
+                   8: 25,
+                   9: 30,
+                   10: 40,
+                   11: 50,
+                   12: 30}
+        return maxPnts[cat]
     
     
     def add(self, dice, cat):
@@ -363,7 +379,8 @@ class Game:
         if debugLevel >= 1:
             for ii in range(13):
                 _str += (
-                        'DICE: ' + str(dfLog.loc[ii,'dice2'])
+                        '--\n'
+                        + 'DICE: ' + str(dfLog.loc[ii,'dice2'])
                         + ';\nEVAL: ' + str(dfLog.loc[ii,'info2'])
                         + ';\nDECISION: ' + ScoreBoard.cats[dfLog.loc[ii,'deci2']]
                         )

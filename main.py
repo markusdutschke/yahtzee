@@ -10,6 +10,7 @@ import numpy as np
 import sys; sys.path.append('./lib/')
 from comfct.debug import lp
 from yahtzee import Dice, ScoreBoard, Game
+from sklearn.neural_network import MLPRegressor
 import bot
 #(PlayerEnsemble,
 #        PlayerRandomCrap, PlayerOneShotHero,
@@ -67,42 +68,55 @@ def main3_initLearningPlayer():
     print('Benchmark Intelligent Players:')
 #    players = [PlayerOneShotAI(), PlayerOneShortAISmartEnc()]
     players = [
-            bot.PlayerOneShotAI(),
-#            bot.PlayerAI_1SEnc_1(),
+#            bot.PlayerOneShotAI(),
+#            bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(20, 20, 25, 20))),
+#            bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(35, 40, 30, 25, 10))),
+            bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
+            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
+            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(35, 35, 30, 20, 20, 20))),
+#            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
+#            bot.PlayerAI_1SEnc_3(),
 #            bot.PlayerAI_1SEnc_1(),
 #            bot.PlayerAI_1SEnc_2(),
 #            bot.PlayerAI_1SEnc_2(),
-            bot.PlayerAI_1SEnc_3(),
+#            bot.PlayerAI_1SEnc_3(),
                ]
     
     nGames = [1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
-#    nGames = [10, 100, 200, 300, 400, 500]
-#    nGames = [60]
+    nGames = [1, 5, 10, 15, 20, 25, 30]
+#    nGames = [1, 5, 10]
     for nT in nGames:
         nT = int(nT)
 
         for player in players:
             trainerEnsemble = bot.PlayerEnsemble([
-                    (1, player),
+                    (10, player),
                     (1, bot.PlayerRandomCrap()),
-                    (1, bot.PlayerOneShotHero())
+#                    (1, bot.PlayerOneShotHero())
                     ])
             player.train(nGames=nT-player.nGames, trainerEnsemble=trainerEnsemble)
             m, s = player.benchmark()
             name = player.name + ' ('+str(player.nGames) + ' games)'
             print('\t{:35} {:.1f} +/- {:.1f}'.format(name+':', m, s))
+            
+#            if m > 111:
+#                print(Game(player).__str__(debugLevel=1))
+#                print(Game(player).__str__(debugLevel=1))
+#                print(Game(player).__str__(debugLevel=1))
+#            lp(player.catMLParas['lenMiniBatch'])
         print('\t-')
     
 
-    
+#    np.random.seed(0)
 #    for player in players:
+#        print('\n'*3 + player.name)
 #        print(Game(player).__str__(debugLevel=1))
 
 
 
 
 if __name__== "__main__":
-    np.random.seed(0)
+    np.random.seed(1)
 #    main1_playARandomGame()
     main2_simpleBenchmark()
     main3_initLearningPlayer()
