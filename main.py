@@ -72,8 +72,8 @@ def main3_initLearningPlayer():
 #            bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(20, 20, 25, 20))),
 #            bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(35, 40, 30, 25, 10))),
             bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
-            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
-            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(35, 35, 30, 20, 20, 20))),
+#            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
+#            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(35, 35, 30, 20, 20, 20))),
 #            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
 #            bot.PlayerAI_1SEnc_3(),
 #            bot.PlayerAI_1SEnc_1(),
@@ -94,7 +94,8 @@ def main3_initLearningPlayer():
                     (1, bot.PlayerRandomCrap()),
 #                    (1, bot.PlayerOneShotHero())
                     ])
-            player.train(nGames=nT-player.nGames, trainerEnsemble=trainerEnsemble)
+#            player.train(nGames=nT-player.nGames, trainerEnsemble=trainerEnsemble)
+            player.train2(nGames=nT-player.nGames)
             m, s = player.benchmark()
             name = player.name + ' ('+str(player.nGames) + ' games)'
             print('\t{:35} {:.1f} +/- {:.1f}'.format(name+':', m, s))

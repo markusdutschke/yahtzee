@@ -232,7 +232,46 @@ class ScoreBoard:
 class Game:
     """Stores a complete game"""
     
-    def __init__(self, players):
+    def __init__(self, players=None):
+        self.catLog = []
+        if not players is None:
+            self.autoplay(players)
+        else:
+            self.sb = ScoreBoard()
+            self.attempt = 0
+            self.dice = Dice()
+            self.waitForAction = False
+            
+    def ask_action(self):
+        assert self.waitForAction == False
+        
+        if len(self.sb.open_cats()) == 0:
+            return self.sb.getSum()
+        
+        if self.attempt < 2:
+            act = 'choose_dice'
+            paras = (self.sb, self.dice, self.attempt)
+        else:
+            assert self.attempt == 2
+            act = 'choose_cat'
+            paras = (self.sb, self.dice)
+        self.waitForAction = True
+        return act, paras
+    
+    def perf_action(self, act, para):
+        assert self.waitForAction == True
+        if self.attempt < 2:
+            assert act == 'choose_dice'
+            self.dice.roll(para)
+        else:
+            assert self.attempt == 2
+            assert act == 'choose_cat'
+            self.catLog += [(self.sb.copy(), self.dice, para)]
+            self.sb.add(self.dice, para)
+        self.attempt = (self.attempt+1)%3
+        self.waitForAction = False
+    
+    def autoplay(self, players):
         """Plays and stores a Yahtzee game.
         
         Extended description of function.
@@ -282,7 +321,7 @@ class Game:
         player = iter(players)
         
         self.log = []
-        self.catLog = []  # log for cat decision learning
+#        self.catLog = []  # log for cat decision learning
         sb = ScoreBoard()
         for cc in range(0,13):
             roundLog = [sb.copy()]

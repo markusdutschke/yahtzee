@@ -14,6 +14,7 @@ from yahtzee import Game, ScoreBoard
 from sklearn.neural_network import MLPRegressor
 from sklearn.utils.validation import check_is_fitted
 from comfct.list import list_cast
+from comfct.numpy import weighted_choice
 
 #def benchmark(player, nGames=100):
 #    """Benchmarks Yahtzee decision making models.
@@ -688,6 +689,116 @@ class PlayerOneShotAI(AbstractPlayer):
                     players[0] = PlayerRandomCrap()
 #            lp(type(players), len(players))
             game = Game(players)
+            
+            self.games_to_cat_replay_memory(game)
+            #create miniBatch
+            n_samples = self.catMLParas['lenMiniBatch']
+            X = np.empty(shape=(n_samples, self.n_features))
+            y = np.empty(shape=(n_samples,))
+            for ind in range(n_samples):
+                crmElem = np.random.choice(self.crm)
+#                lp(crmElem[1].vals, ScoreBoard.cats[crmElem[2]], crmElem[3])
+                xy = self.xy_from_crm(crmElem)
+                X[ind, :] = xy[0]
+                y[ind] = xy[1]
+#                lp(X[ind,:])
+#                lp(y[ind])
+#            scoreBoards, dices, cats = self.games_to_cat_info(game)
+#            lp(scoreBoards)
+#            lp(dices)
+#            lp(cats)
+#            X, y = self.cat_decision_parser(scoreBoards, dices, cats)
+
+            self.rgr.partial_fit(X, y)
+            self.nGames += 1
+            
+    def train2(self, nGames, pRand=.1, pRat=100):
+        """Training the Player with nGames and based on the trainers moves.
+    
+        Extended description of function.
+    
+        Parameters
+        ----------
+        nGames : int
+            Nomber of games
+        trainerEnsemble : PlayerEnsemble
+            Integer represents the weight of the specici players moves
+            player is someone doing decisions; None is self
+        pRat : float
+            predicted best action is pRat times as probable to choose as
+            the predicted most unfavourable action.
+    
+        Returns
+        -------
+        bool
+            Description of return value
+    
+        See Also
+        --------
+        otherfunc : some related other function
+    
+        Examples
+        --------
+        These are written in doctest format, and should illustrate how to
+        use the function.
+    
+        >>> a=[1,2,3]
+        >>> [x + 3 for x in a]
+        [4, 5, 6]
+        """
+        """use:
+            MLPRegressor
+            partial_fit
+            https://www.programcreek.com/python/example/93778/sklearn.neural_network.MLPRegressor
+        """
+        
+#        plys = [tr[1] for tr in trainers]
+#        probs = [tr[0] for tr in trainers]
+        
+        for gg in range(nGames):
+            game = Game()
+            for rr in range(13):
+                for aa in range(3):
+                    act, paras = game.ask_action()
+                    if aa < 2:
+                        game.perf_action(act, self.choose_roll(*paras))
+                    else:
+                        if self.nGames == 0 or np.random.rand() <= pRand:
+                            cat = np.random.choice(paras[0].open_cats())
+                        else:
+#                            cat = self.choose_cat(*paras)
+                            opts = self.eval_cats(*paras)
+                            
+                            cs = [opt[0] for opt in opts]
+#                            lp(cs)
+                            ws = [opt[1] for opt in opts]
+#                            lp(ws)
+                            ws = np.array(ws) - np.amin(ws)
+#                            lp(ws)
+                            if np.amax(ws) > 0:
+                                alpha = np.log(pRat)/np.amax(ws)
+                                ws = np.exp(alpha*ws)
+#                                lp(ws)
+                                cat = weighted_choice(cs, ws)
+                            else:
+                                cat = opts[0][0]
+#                            assert False
+                        game.perf_action(act, cat)
+#            assert False
+#            player =A np.random.choice(plys, p=probs)
+#            players = trainerEnsemble.randGameSet()
+#            lp(type(player), len(player))
+#            if player is None:
+#                player = self
+#            lp(type(player), len(player))
+#            if hasattr(self, 'nGames'):
+#                if players[0].nGames <= 0:
+#                    players[0] = PlayerRandomCrap()
+#            players = 0
+#            if self.nGames == 0:
+#                player = PlayerRandomCrap()
+##            lp(type(players), len(players))
+#            game = Game(players)
             
             self.games_to_cat_replay_memory(game)
             #create miniBatch
