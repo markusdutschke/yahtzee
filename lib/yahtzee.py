@@ -212,7 +212,7 @@ class ScoreBoard:
 class Game:
     """Stores a complete game"""
     
-    def __init__(self, player):
+    def __init__(self, players):
         """Plays and stores a Yahtzee game.
         
         Extended description of function.
@@ -231,7 +231,7 @@ class Game:
             arg1 : ScoreBoard
             arg2 : Dice
             returns : 0 <= int <= 12
-        player : Player
+        players : Player or list of players with len 13*3
             Artificial player, subclass of AbstractPlayer
         Returns
         -------
@@ -251,21 +251,31 @@ class Game:
         >>> [x + 3 for x in a]
         [4, 5, 6]
         """
+#        if isinstance(player, AbstractPlayer):
+#            playerGen = lambda: player
+#        else:
+#            assert isinstance(player, PlayerEnsemble)
+#            playerGen = lambda: player.rand()
+        if not isinstance(players, list):
+            players = [players] * 13*3
+        assert len(players) == 3*13, str(players)
+        player = iter(players)
+        
         self.log = []
         sb = ScoreBoard()
         for cc in range(0,13):
             roundLog = [sb]
             
             dice = Dice()
-            deci = player.choose_roll(sb, dice, 0)
+            deci = next(player).choose_roll(sb, dice, 0)
             roundLog += [dice.copy(), deci]
             
             dice.roll(deci)
-            deci = player.choose_roll(sb, dice, 1)
+            deci = next(player).choose_roll(sb, dice, 1)
             roundLog += [dice.copy(), deci]
             
             dice.roll(deci)
-            deci = player.choose_cat(sb, dice)
+            deci = next(player).choose_cat(sb, dice)
             sb.add(dice, deci)
             roundLog += [dice.copy(), deci]
             

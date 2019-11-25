@@ -8,60 +8,106 @@ Created on Fri Nov 22 18:02:57 2019
 from comfct.debug import lp
 from abc import ABC, abstractmethod
 import numpy as np
+import random
 from yahtzee import Game
 from sklearn.neural_network import MLPRegressor
+from sklearn.utils.validation import check_is_fitted
 from comfct.list import list_cast
 
-def benchmark(player, nGames=100):
-    """Benchmarks Yahtzee decision making models.
+#def benchmark(player, nGames=100):
+#    """Benchmarks Yahtzee decision making models.
+#    
+#    Extended description of function.
+#    
+#    Parameters
+#    ----------
+#    fctRoll : function
+#        Classifier for which dice to reroll.
+#        arg1 : ScoreBoard
+#        arg2 : Dice
+#        arg3 : int, 0 or 1
+#            number of reroll attempts so far
+#        returns : bool array of len 5
+#    fctCat : str
+#        Classifier for which categorie to use on the score board for dice.
+#        arg1 : ScoreBoard
+#        arg2 : Dice
+#        returns : 0 <= int <= 12
+#    player : Player
+#        Artificial player, subclass of AbstractPlayer
+#    nGames : int
+#        number of trials
+#    
+#    Returns
+#    -------
+#    scoreMean : float
+#        Description of return value
+#    scoreStd : float
+#        Standard deviation
+#    
+#    See Also
+#    --------
+#    otherfunc : some related other function
+#    
+#    Examples
+#    --------
+#    These are written in doctest format, and should illustrate how to
+#    use the function.
+#    
+#    >>> a=[1,2,3]
+#    >>> [x + 3 for x in a]
+#    [4, 5, 6]
+#    """
+#    scores = []
+#    for ii in range(nGames):
+#        game = Game(player)
+#        scores += [game.sb.getSum()]
+#    return np.mean(scores), np.std(scores)
     
-    Extended description of function.
+
+class PlayerEnsemble:
+    """Representing a set of players with a set of probablilities to
+    choose a specific one.
+    Players with nGames==0 are never chosesn"""
     
-    Parameters
-    ----------
-    fctRoll : function
-        Classifier for which dice to reroll.
-        arg1 : ScoreBoard
-        arg2 : Dice
-        arg3 : int, 0 or 1
-            number of reroll attempts so far
-        returns : bool array of len 5
-    fctCat : str
-        Classifier for which categorie to use on the score board for dice.
-        arg1 : ScoreBoard
-        arg2 : Dice
-        returns : 0 <= int <= 12
-    player : Player
-        Artificial player, subclass of AbstractPlayer
-    nGames : int
-        number of trials
+    def __init__(self, players):
+        """
+        players : list of (weight : int, player : Player)
+            weight is the probablility, no need to normalize
+        """
+        self.players = [pl[1] for pl in players]
+        self.weights = [pl[0] for pl in players]
+#        probsSum = np.sum(
+#        self.probs = [pr/np.sum(
     
-    Returns
-    -------
-    scoreMean : float
-        Description of return value
-    scoreStd : float
-        Standard deviation
+    def rand(self):
+#        lp(self.players)
+#        lp(self.probs)
+#        return random.choices(['a','b'], weights=[1,2])
+#        lp(self.weights)
+        flt = [hasattr(pl, 'nGames') and pl.nGames>0 for pl in self.players]
+#        lp(flt)
+        ps = [p for p,f in zip(self.players, flt) if f]
+        ws = [w for w,f in zip(self.weights, flt) if f]
+#        lp(ws)
+        return random.choices(ps, ws)[0]
     
-    See Also
-    --------
-    otherfunc : some related other function
-    
-    Examples
-    --------
-    These are written in doctest format, and should illustrate how to
-    use the function.
-    
-    >>> a=[1,2,3]
-    >>> [x + 3 for x in a]
-    [4, 5, 6]
-    """
-    scores = []
-    for ii in range(nGames):
-        game = Game(player)
-        scores += [game.sb.getSum()]
-    return np.mean(scores), np.std(scores)
-    
+    def randGameSet(self):
+#        lp(self.weights)
+        flt = [not hasattr(pl, 'nGames') or
+               (hasattr(pl, 'nGames') and pl.nGames>0)
+               for pl in self.players]
+        assert np.sum(flt) >= 1, (
+                'no ready players in ensemble\n{:}\n{:}\n{:}'.format(
+                        str(self.players), str(self.weights), str(flt)))
+#        lp(flt)
+        ps = [p for p,f in zip(self.players, flt) if f]
+        ws = [w for w,f in zip(self.weights, flt) if f]
+#        ps = self.players[flt]
+#        ws = self.weights[flt]
+#        lp(ws)
+#        assert False
+        return random.choices(ps, ws, k=13*3)
 
 class AbstractPlayer(ABC):  # abstract class
  
@@ -144,6 +190,62 @@ class AbstractPlayer(ABC):  # abstract class
         """
         pass
     
+    def benchmark(self, nGames=100, nBins=10):
+        """Benchmarks Yahtzee decision making models.
+        
+        Extended description of function.
+        
+        Parameters
+        ----------
+        fctRoll : function
+            Classifier for which dice to reroll.
+            arg1 : ScoreBoard
+            arg2 : Dice
+            arg3 : int, 0 or 1
+                number of reroll attempts so far
+            returns : bool array of len 5
+        fctCat : str
+            Classifier for which categorie to use on the score board for dice.
+            arg1 : ScoreBoard
+            arg2 : Dice
+            returns : 0 <= int <= 12
+        player : Player
+            Artificial player, subclass of AbstractPlayer
+        nGames : int
+            number of trials
+        nBins : int
+            before mean and std are calulated, the games scores are binned
+            to nBins bins.
+        
+        Returns
+        -------
+        scoreMean : float
+            Description of return value
+        scoreStd : float
+            Standard deviation
+        
+        See Also
+        --------
+        otherfunc : some related other function
+        
+        Examples
+        --------
+        These are written in doctest format, and should illustrate how to
+        use the function.
+        
+        >>> a=[1,2,3]
+        >>> [x + 3 for x in a]
+        [4, 5, 6]
+        """
+        scores = []
+        for ii in range(nGames):
+            game = Game(self)
+            scores += [game.sb.getSum()]
+#        lp(scores)
+        scores = [np.mean(chunk) for chunk in np.array_split(scores, nBins)]
+#        lp(scores)
+        return np.mean(scores), np.std(scores)
+    
 class PlayerRandomCrap(AbstractPlayer):
     """This player behaves completely random"""
     name = 'Random Crap'
@@ -178,14 +280,13 @@ class PlayerOneShotAI(AbstractPlayer):
             ):
         super().__init__()
         self.rgr = regressor
+        self.nGames = 0
         
         # init regressor for adaptative fit
-#        game = Game(PlayerOneShotHero())
-#        X, y = self.cat_decision_parser(*self.games_to_cat_info(game))
-        games = [Game(playerInit) for ii in range(nGamesInit)]
-        X, y = self.cat_decision_parser(*self.games_to_cat_info(games))
-
-        self.rgr.fit(X, y)
+#        games = [Game(playerInit) for ii in range(nGamesInit)]
+#        X, y = self.cat_decision_parser(*self.games_to_cat_info(games))
+##        self.rgr.fit(X, y)
+#        self.rgr.partial_fit(X, y)
         
     def choose_roll(self, scoreBoard, dice, attempt):
         return [False]*5
@@ -193,6 +294,7 @@ class PlayerOneShotAI(AbstractPlayer):
     # move to abstract LearningPlayer
     def choose_cat(self, scoreBoard, dice):
         """Takes only open categories."""
+        assert self.nGames > 0, str(scoreBoard.print())
         opts = []
         for cat in scoreBoard.open_cats():
             opts += [(cat, self.cat_predict(scoreBoard, dice, cat))]
@@ -265,13 +367,60 @@ class PlayerOneShotAI(AbstractPlayer):
         # hopefully learns bonus by itsself
 #        x[0, 31] = np.sum(roundLog[0].data[:6]) / 105  # upper sum for bonus
     
-    def train(self, nGames):
+    def train(self, nGames,
+              trainerEnsemble=PlayerEnsemble(
+                      [(1, PlayerRandomCrap())]
+                      )):
+        """Training the Player with nGames and based on the trainers moves.
+    
+        Extended description of function.
+    
+        Parameters
+        ----------
+        nGames : int
+            Nomber of games
+        trainerEnsemble : PlayerEnsemble
+            Integer represents the weight of the specici players moves
+            player is someone doing decisions; None is self
+    
+        Returns
+        -------
+        bool
+            Description of return value
+    
+        See Also
+        --------
+        otherfunc : some related other function
+    
+        Examples
+        --------
+        These are written in doctest format, and should illustrate how to
+        use the function.
+    
+        >>> a=[1,2,3]
+        >>> [x + 3 for x in a]
+        [4, 5, 6]
+        """
         """use:
             MLPRegressor
             partial_fit
             https://www.programcreek.com/python/example/93778/sklearn.neural_network.MLPRegressor
         """
+#        plys = [tr[1] for tr in trainers]
+#        probs = [tr[0] for tr in trainers]
+        
         for gg in range(nGames):
-            game = Game(self)
+#            player =A np.random.choice(plys, p=probs)
+            players = trainerEnsemble.randGameSet()
+#            lp(type(player), len(player))
+#            if player is None:
+#                player = self
+#            lp(type(player), len(player))
+            if hasattr(players[0], 'nGames'):
+                if players[0].nGames <= 0:
+                    players[0] = PlayerRandomCrap()
+#            lp(type(players), len(players))
+            game = Game(players)
             self.rgr.partial_fit(
                     *self.cat_decision_parser(*self.games_to_cat_info(game)))
+            self.nGames += 1

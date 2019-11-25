@@ -9,7 +9,7 @@ import numpy as np
 import sys; sys.path.append('./lib/')
 from comfct.debug import lp
 from yahtzee import Dice, ScoreBoard, Game
-from bot import benchmark, PlayerRandomCrap, PlayerOneShotHero, PlayerOneShotAI
+from bot import PlayerRandomCrap, PlayerOneShotHero, PlayerOneShotAI, PlayerEnsemble
 
 
 
@@ -53,25 +53,32 @@ def main1_playARandomGame():
 def main2_simpleBenchmark():
     print('Benchmarking players:')
     for player in [PlayerRandomCrap(), PlayerOneShotHero()]:
-        m, s = benchmark(player, nGames=1000)
+#        m, s = benchmark(player, nGames=100)
+        m, s = player.benchmark()
         print('\t{:30} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
         
 
 def main3_initLearningPlayer():
-#    player = PlayerOneShotAI()
-    player = PlayerOneShotAI(playerInit=PlayerOneShotHero(), nGamesInit=int(1e4))
+    player = PlayerOneShotAI()
+#    player = PlayerOneShotAI()#playerInit=PlayerOneShotHero())#, nGamesInit=int(1))
     
-    m, s = benchmark(player, nGames=100)
-    print('\t{:30} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
+#    m, s = benchmark(player, nGames=100)
+#    print('\t{:30} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
     
     nTT = 0  # n total trainings
-    trainingSchedule = [10, 90, 300, 600, 1e4, 1e4, 1e5, 1e5, 1e5, 1e5, 1e5, 1e5]
+    trainingSchedule = [10, 90, 100, 600, 1e4, 1e4, 1e5, 1e5, 1e5, 1e5, 1e5, 1e5]
     for nT in trainingSchedule:
         nT = int(nT)
         nTT += nT
-        player.train(nGames=nT)
+        trainerEnsemble = PlayerEnsemble([
+                (1, player),
+                (2, PlayerRandomCrap()),
+                (2, PlayerOneShotHero())
+                ])
+        player.train(nGames=nT, trainerEnsemble=trainerEnsemble)
     
-        m, s = benchmark(player, nGames=1000)
+#        m, s = benchmark(player, nGames=1000)
+        m, s = player.benchmark()
         name = player.name + ' after '+str(nTT) + ' games:'
         print('\t{:30} {:.1f} +/- {:.1f}'.format(name+':', m, s))
 
