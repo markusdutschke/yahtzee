@@ -7,9 +7,11 @@ Created on Fri Nov 22 10:53:36 2019
 """
 # --- imports
 import numpy as np
+#np.random.seed(0)
 import pandas as pd
 from comfct.debug import lp
 from copy import deepcopy
+
 
 def roll_dice(nDice=5):
     #dice = np.empty(shape=nDice,dtype=int)

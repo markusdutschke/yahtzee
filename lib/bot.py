@@ -9,6 +9,7 @@ from comfct.debug import lp
 from abc import ABC, abstractmethod
 import numpy as np
 import random
+#np.random.seed(0)
 from yahtzee import Game
 from sklearn.neural_network import MLPRegressor
 from sklearn.utils.validation import check_is_fitted
@@ -77,10 +78,17 @@ class PlayerEnsemble:
         """
         self.players = [pl[1] for pl in players]
         self.weights = [pl[0] for pl in players]
+        
+#        wSum = np.sum(self.weights)
+#        self.weights = [w/wSum for w in self.weights]
+#        if len(self.weights)>1:
+#            self.weights[-1] = 1-np.sum(self.weights[:-1])
+#        lp(self.weights, np.sum(self.weights))
 #        probsSum = np.sum(
 #        self.probs = [pr/np.sum(
     
     def rand(self):
+        assert False, 'not yet needed, probably working'
 #        lp(self.players)
 #        lp(self.probs)
 #        return random.choices(['a','b'], weights=[1,2])
@@ -107,7 +115,11 @@ class PlayerEnsemble:
 #        ws = self.weights[flt]
 #        lp(ws)
 #        assert False
-        return random.choices(ps, ws, k=13*3)
+        
+#        return random.choices(ps, ws, k=13*3)
+        wSum = np.sum(ws)
+        ws = [w/wSum for w in ws]
+        return list(np.random.choice(ps, size=13*3, p=ws))
 
 class AbstractPlayer(ABC):  # abstract class
  
@@ -461,6 +473,7 @@ class PlayerAI_1SEnc_2(PlayerOneShotAI):
     def __init__(
             self, regressor=MLPRegressor(hidden_layer_sizes=(20, 15, 10, 5))):
         super().__init__(regressor)
+        
     
     
     @property
@@ -468,7 +481,7 @@ class PlayerAI_1SEnc_2(PlayerOneShotAI):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 13 + 4
+        return 13
     def encoder(self, scoreBoard, dice, cat):
         """Encodes a game situation (decision input) as
         array with elements in range 0 to 1.
@@ -481,4 +494,36 @@ class PlayerAI_1SEnc_2(PlayerOneShotAI):
 #        if cat in scoreBoard.open_cats():
         x[cat] = scoreBoard.check_points(dice, cat) / 50
         
+        return x
+
+class PlayerAI_1SEnc_3(PlayerOneShotAI):
+    name = 'AI_1SEnc_3'
+    
+    def __init__(
+            self, regressor=MLPRegressor(hidden_layer_sizes=(4, 4),
+                                         )):
+        super().__init__(regressor)
+#        lp(self.rgr.get_params())
+    
+    
+    @property
+    def n_features(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 13 + 1
+    def encoder(self, scoreBoard, dice, cat):
+        """Encodes a game situation (decision input) as
+        array with elements in range 0 to 1.
+        """
+        assert 0 <= cat <= 12
+        x = np.zeros(shape=(self.n_features))
+
+#        for cc in scoreBoard.open_cats():
+#            x[cc] = scoreBoard.check_points(dice, cc) / 50
+#        x[-4:] = np.array(list(np.binary_repr(cat, width=4)))
+#        if cat in scoreBoard.open_cats():
+        x[cat] = scoreBoard.check_points(dice, cat) / 50
+#        x[13:26] = scoreBoard.scores.mask.astype(int)  # avail. cats
+        x[-1] = scoreBoard.getSum()
         return x

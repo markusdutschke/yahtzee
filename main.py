@@ -6,6 +6,7 @@ Created on Fri Nov 22 10:50:06 2019
 @author: user
 """
 import numpy as np
+
 import sys; sys.path.append('./lib/')
 from comfct.debug import lp
 from yahtzee import Dice, ScoreBoard, Game
@@ -51,7 +52,7 @@ def getCatSelBinInfo( scoreBoard, dice):
 
 
 def main1_playARandomGame():
-    game = Game(PlayerRandomCrap())
+    game = Game(bot.PlayerRandomCrap())
     game.print()
 
 def main2_simpleBenchmark():
@@ -65,7 +66,11 @@ def main2_simpleBenchmark():
 def main3_initLearningPlayer():
     print('Benchmark Intelligent Players:')
 #    players = [PlayerOneShotAI(), PlayerOneShortAISmartEnc()]
-    players = [bot.PlayerAI_1SEnc_1(), bot.PlayerAI_1SEnc_2()]
+    players = [
+            bot.PlayerAI_1SEnc_1(),
+            bot.PlayerAI_1SEnc_2(),
+            bot.PlayerAI_1SEnc_3(),
+               ]
     
     nGames = [1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
     for nT in nGames:
@@ -81,10 +86,12 @@ def main3_initLearningPlayer():
             m, s = player.benchmark()
             name = player.name + ' ('+str(player.nGames) + ' games)'
             print('\t{:35} {:.1f} +/- {:.1f}'.format(name+':', m, s))
+        print('\t-')
 
 
 
 if __name__== "__main__":
+    np.random.seed(0)
 #    main1_playARandomGame()
-    main2_simpleBenchmark()
+#    main2_simpleBenchmark()
     main3_initLearningPlayer()
