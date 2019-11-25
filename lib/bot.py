@@ -190,7 +190,7 @@ class AbstractPlayer(ABC):  # abstract class
         """
         pass
     
-    def benchmark(self, nGames=100, nBins=10):
+    def benchmark(self, nGames=100, nBins=20):
         """Benchmarks Yahtzee decision making models.
         
         Extended description of function.
@@ -275,8 +275,8 @@ class PlayerOneShotAI(AbstractPlayer):
     def __init__(
             self,
             regressor=MLPRegressor(hidden_layer_sizes=(30, 25, 20)),
-            playerInit=PlayerRandomCrap(),
-            nGamesInit=1
+#            playerInit=PlayerRandomCrap(),
+#            nGamesInit=1
             ):
         super().__init__()
         self.rgr = regressor
@@ -421,6 +421,64 @@ class PlayerOneShotAI(AbstractPlayer):
                     players[0] = PlayerRandomCrap()
 #            lp(type(players), len(players))
             game = Game(players)
-            self.rgr.partial_fit(
-                    *self.cat_decision_parser(*self.games_to_cat_info(game)))
+#            lp(self.name, self.n_features)
+            X, y = self.cat_decision_parser(*self.games_to_cat_info(game))
+#            lp(X.shape, y.shape)
+            self.rgr.partial_fit(X, y)
             self.nGames += 1
+
+class PlayerAI_1SEnc_1(PlayerOneShotAI):
+    name = 'AI_1SEnc_1'
+    
+    def __init__(
+            self, regressor=MLPRegressor(hidden_layer_sizes=(20, 15, 10, 5))):
+        super().__init__(regressor)
+    
+    
+    @property
+    def n_features(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 13 + 4
+    def encoder(self, scoreBoard, dice, cat):
+        """Encodes a game situation (decision input) as
+        array with elements in range 0 to 1.
+        """
+        x = np.zeros(shape=(self.n_features))
+
+#        for cc in scoreBoard.open_cats():
+#            x[cc] = scoreBoard.check_points(dice, cc) / 50
+#        x[-4:] = np.array(list(np.binary_repr(cat, width=4)))
+        if cat in scoreBoard.open_cats():
+            x[cat] = scoreBoard.check_points(dice, cat) / 50
+        
+        return x
+
+class PlayerAI_1SEnc_2(PlayerOneShotAI):
+    name = 'AI_1SEnc_2'
+    
+    def __init__(
+            self, regressor=MLPRegressor(hidden_layer_sizes=(20, 15, 10, 5))):
+        super().__init__(regressor)
+    
+    
+    @property
+    def n_features(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 13 + 4
+    def encoder(self, scoreBoard, dice, cat):
+        """Encodes a game situation (decision input) as
+        array with elements in range 0 to 1.
+        """
+        x = np.zeros(shape=(self.n_features))
+
+#        for cc in scoreBoard.open_cats():
+#            x[cc] = scoreBoard.check_points(dice, cc) / 50
+#        x[-4:] = np.array(list(np.binary_repr(cat, width=4)))
+#        if cat in scoreBoard.open_cats():
+        x[cat] = scoreBoard.check_points(dice, cat) / 50
+        
+        return x

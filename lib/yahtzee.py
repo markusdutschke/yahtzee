@@ -109,8 +109,8 @@ class ScoreBoard:
         """
 #        lp(dice, type(dice))
         dice = dice.vals
-        assert self.scores.mask[cat], (
-                'Mask must be True is dice should be assigned')
+#        assert self.scores.mask[cat], (
+#                'Mask must be True if dice should be assigned')
         score = 0
         if cat>=0 and cat<=5:
             score=np.sum(dice[dice==(cat+1)])

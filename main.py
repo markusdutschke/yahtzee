@@ -9,7 +9,11 @@ import numpy as np
 import sys; sys.path.append('./lib/')
 from comfct.debug import lp
 from yahtzee import Dice, ScoreBoard, Game
-from bot import PlayerRandomCrap, PlayerOneShotHero, PlayerOneShotAI, PlayerEnsemble
+import bot
+#(PlayerEnsemble,
+#        PlayerRandomCrap, PlayerOneShotHero,
+#        PlayerOneShotAI, PlayerOneShortAISmartEnc
+#        )
 
 
 
@@ -51,36 +55,32 @@ def main1_playARandomGame():
     game.print()
 
 def main2_simpleBenchmark():
-    print('Benchmarking players:')
-    for player in [PlayerRandomCrap(), PlayerOneShotHero()]:
+    print('Benchmark Classic Players:')
+    for player in [bot.PlayerRandomCrap(), bot.PlayerOneShotHero()]:
 #        m, s = benchmark(player, nGames=100)
         m, s = player.benchmark()
-        print('\t{:30} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
+        print('\t{:35} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
         
 
 def main3_initLearningPlayer():
-    player = PlayerOneShotAI()
-#    player = PlayerOneShotAI()#playerInit=PlayerOneShotHero())#, nGamesInit=int(1))
+    print('Benchmark Intelligent Players:')
+#    players = [PlayerOneShotAI(), PlayerOneShortAISmartEnc()]
+    players = [bot.PlayerAI_1SEnc_1(), bot.PlayerAI_1SEnc_2()]
     
-#    m, s = benchmark(player, nGames=100)
-#    print('\t{:30} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
-    
-    nTT = 0  # n total trainings
-    trainingSchedule = [10, 90, 100, 600, 1e4, 1e4, 1e5, 1e5, 1e5, 1e5, 1e5, 1e5]
-    for nT in trainingSchedule:
+    nGames = [1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
+    for nT in nGames:
         nT = int(nT)
-        nTT += nT
-        trainerEnsemble = PlayerEnsemble([
-                (1, player),
-                (2, PlayerRandomCrap()),
-                (2, PlayerOneShotHero())
-                ])
-        player.train(nGames=nT, trainerEnsemble=trainerEnsemble)
-    
-#        m, s = benchmark(player, nGames=1000)
-        m, s = player.benchmark()
-        name = player.name + ' after '+str(nTT) + ' games:'
-        print('\t{:30} {:.1f} +/- {:.1f}'.format(name+':', m, s))
+
+        for player in players:
+            trainerEnsemble = bot.PlayerEnsemble([
+                    (2, player),
+                    (1, bot.PlayerRandomCrap()),
+                    (1, bot.PlayerOneShotHero())
+                    ])
+            player.train(nGames=nT-player.nGames, trainerEnsemble=trainerEnsemble)
+            m, s = player.benchmark()
+            name = player.name + ' ('+str(player.nGames) + ' games)'
+            print('\t{:35} {:.1f} +/- {:.1f}'.format(name+':', m, s))
 
 
 
