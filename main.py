@@ -72,8 +72,9 @@ def main3_initLearningPlayer():
 #            bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(20, 20, 25, 20))),
 #            bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(35, 40, 30, 25, 10))),
             bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
-#            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
-#            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(35, 35, 30, 20, 20, 20))),
+            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
+            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20, 20, 20))),
+            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(50, 45, 50, 40))),
 #            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
 #            bot.PlayerAI_1SEnc_3(),
 #            bot.PlayerAI_1SEnc_1(),
@@ -83,17 +84,17 @@ def main3_initLearningPlayer():
                ]
     
     nGames = [1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
-    nGames = [1, 5, 10, 15, 20, 25, 30]
-#    nGames = [1, 5, 10]
+    nGames = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+    nGames = [1, 5, 10, 15, 20]
     for nT in nGames:
         nT = int(nT)
 
         for player in players:
-            trainerEnsemble = bot.PlayerEnsemble([
-                    (10, player),
-                    (1, bot.PlayerRandomCrap()),
-#                    (1, bot.PlayerOneShotHero())
-                    ])
+#            trainerEnsemble = bot.PlayerEnsemble([
+#                    (10, player),
+#                    (1, bot.PlayerRandomCrap()),
+##                    (1, bot.PlayerOneShotHero())
+#                    ])
 #            player.train(nGames=nT-player.nGames, trainerEnsemble=trainerEnsemble)
             player.train2(nGames=nT-player.nGames)
             m, s = player.benchmark()
@@ -103,6 +104,7 @@ def main3_initLearningPlayer():
 #            if m > 111:
 #                print(Game(player).__str__(debugLevel=1))
 #                print(Game(player).__str__(debugLevel=1))
+#                assert False
 #                print(Game(player).__str__(debugLevel=1))
 #            lp(player.catMLParas['lenMiniBatch'])
         print('\t-')
