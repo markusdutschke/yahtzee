@@ -216,17 +216,33 @@ class ScoreBoard:
     def getSum(self):
         return self.getUpperSum()+self.getLowerSum()
     
+#    def print(self):
+#        print('='*10 + ' Score Board: ' + '='*10)
+##        print()
+#        for ii in range(13):
+#            if ii == 6:
+#                print('-'*34)
+#            score = '--' if self.scores.mask[ii] else str(self.scores[ii])
+#            print('{:16}: {:2}'.format(ScoreBoard.cats[ii], score))
+#        print('='*34)
+#        print(' '*10 + 'Score: ' + str(self.getSum()) + ' '*10)
+#        print('='*34)
     def print(self):
-        print('='*10 + ' Score Board: ' + '='*10)
+        print(self)
+        
+    def __str__(self):
+        _str = ''
+        _str += ('='*10 + ' Score Board: ' + '='*10 + '\n')
 #        print()
         for ii in range(13):
             if ii == 6:
                 print('-'*34)
             score = '--' if self.scores.mask[ii] else str(self.scores[ii])
-            print('{:16}: {:2}'.format(ScoreBoard.cats[ii], score))
-        print('='*34)
-        print(' '*10 + 'Score: ' + str(self.getSum()) + ' '*10)
-        print('='*34)
+            _str += ('{:16}: {:2}'.format(ScoreBoard.cats[ii], score) + '\n')
+        _str += ('='*34 + '\n')
+        _str += (' '*10 + 'Score: ' + str(self.getSum()) + ' '*10 + '\n')
+        _str += ('='*34 + '\n')
+        return _str
 
 
 class Game:

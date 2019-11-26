@@ -11,7 +11,7 @@ import numpy as np
 import random
 import pandas as pd
 #np.random.seed(0)
-from yahtzee import Game, ScoreBoard
+from yahtzee import Game, ScoreBoard, Dice
 from sklearn.neural_network import MLPRegressor
 from sklearn.utils.validation import check_is_fitted
 from comfct.list import list_cast
@@ -470,7 +470,9 @@ class PlayerOneShotAI(AbstractPlayer):
 
     def __init__(
             self,
-            hidden_layer_sizes=(30, 25, 20),
+            hidden_layer_sizes=(40, 50, 40, 25, 20, 10),
+#            hidden_layer_sizes=(40, 40, 25, 20, 10),
+#            hidden_layer_sizes=(30, 25, 20),
 #            regressor=MLPRegressor(hidden_layer_sizes=(30, 25, 20)),
 #            debugLevel=0,
             catMLParas={'lenReplayMem': 200, 'lenMiniBatch': 30, 'gamma': .95}
@@ -534,6 +536,36 @@ class PlayerOneShotAI(AbstractPlayer):
 #        cs = np.ma.masked_array(cs, mask=np.invert(scoreBoard.mask))
 #        return np.argmax(cs)
     
+    def predict_score(self, scoreBoard):
+        """Predicts final (rest) score of a game based on the
+        current score board.
+        For now this is a rough approximation.
+        ToDo: Use some machine learning model here
+        """
+        
+        if False:  # FOR DEVELOPMENT ONLY: calc weights
+            sb = ScoreBoard()
+            weights = np.empty(shape=(13))
+            for cc in range(13):
+                res = []
+                for ii in range(6**5):
+                    dice = Dice()
+                    res += [sb.check_points(dice, cc)]
+                weights[cc] = np.mean(res)
+            print(weights)
+        
+        ocs = scoreBoard.open_cats()
+        expVals = np.array(
+                [0.82317387, 1.68981481, 2.45679012, 3.32098765, 4.20203189,
+                 5.04475309, 3.7188786, 0.34465021, 0.9837963, 4.49459877,
+                 1.15740741, 0.02572016, 17.43454218])
+        restScore = np.sum(expVals[ocs]) #*len(ocs)/2
+        
+#        print(scoreBoard)
+#        lp(restScore)
+        
+        return restScore
+    
     def eval_cats(self, scoreBoard, dice):
         """retuns list of (cat nr, predicted score)
         First element has highest score"""
@@ -542,6 +574,13 @@ class PlayerOneShotAI(AbstractPlayer):
             score = self.cat_predict(scoreBoard, dice, cat)
             assert len(score)==1
             score = score[0]
+            
+            # additionally consider the resulting state of the score board
+            tmpSB = scoreBoard.copy()
+            tmpSB.add(dice, cat)
+            score += self.catMLParas['gamma'] * self.predict_score(tmpSB)
+            
+            
             opts += [(cat, score)]
 #        lp(opts)
         opts = sorted(opts, key=lambda x: x[1], reverse=True)
@@ -582,8 +621,16 @@ class PlayerOneShotAI(AbstractPlayer):
         y = sc
         if len(crmElem) == 6 and self.nGames > 0:
             sb2, dice2 = crmElem[4:]
-            opts = self.eval_cats(sb2, dice2)
-            y += self.catMLParas['gamma'] * opts[0][1]
+            
+            # forecast rest of the game with the same regressor
+            # bad because of dice2
+#            opts = self.eval_cats(sb2, dice2)
+#            y += self.catMLParas['gamma'] * opts[0][1]
+            
+            y += self.catMLParas['gamma'] * self.predict_score(sb2)
+
+
+            
         return x, y
     
 #    def games_to_cat_info(self, games):
@@ -841,6 +888,7 @@ class PlayerOneShotAI(AbstractPlayer):
     
     @classmethod
     def modelBenchmark(cls, nGames=range(1,2), nInstances=50, *args, **kwargs):
+        np.random.seed(0)
         df = pd.DataFrame(index=nGames)
         df.index.name = 'nGames'
 #        print('inst', flush=True, end='; ')

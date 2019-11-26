@@ -68,26 +68,18 @@ def main3_initLearningPlayer():
     print('Benchmark Intelligent Players:')
 #    players = [PlayerOneShotAI(), PlayerOneShortAISmartEnc()]
     players = [
-#            bot.PlayerOneShotAI(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
-#            bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(20, 20, 25, 20))),
-#            bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(35, 40, 30, 25, 10))),
-#            bot.PlayerAI_1SEnc_1(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
-#            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
-#            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20, 20, 20))),
-#            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(50, 45, 50, 40))),
-#            bot.PlayerAI_1SEnc_2(MLPRegressor(hidden_layer_sizes=(30, 25, 30, 20))),
-#            bot.PlayerAI_1SEnc_3(),
-            bot.PlayerAI_1SEnc_1(),
+#            bot.PlayerAI_1SEnc_1(),
             bot.PlayerAI_1SEnc_2(),
             bot.PlayerAI_1SEnc_3(),
-            bot.PlayerAI_1SEnc_4(),
-            bot.PlayerAI_1SEnc_5(),
+#            bot.PlayerAI_1SEnc_4(),
+#            bot.PlayerAI_1SEnc_5(),
             bot.PlayerAI_1SEnc_6(),
                ]
     
     nGames = [1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
-    nGames = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-    nGames = [1, 5, 10, 15, 20]
+#    nGames = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+#    nGames = np.arange(1,101,1)
+#    nGames = [1, 5, 10, 15, 20]
     for nT in nGames:
         nT = int(nT)
 
@@ -103,10 +95,11 @@ def main3_initLearningPlayer():
             name = player.name + ' ('+str(player.nGames) + ' games)'
             print('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
             
-            if m > 120:
-                print(Game(player).__str__(debugLevel=1))
-                print(Game(player).__str__(debugLevel=1))
-                assert False
+#            if m > 110:
+#                np.random.seed(0)
+#                print(Game(player).__str__(debugLevel=1))
+#                print(Game(player).__str__(debugLevel=1))
+#                assert False
 
         print('\t-')
     
@@ -121,8 +114,8 @@ def main4_evaluateModels():
             bot.PlayerAI_1SEnc_6]:
         
         print('\n\n'+model.name)
-        df = model.modelBenchmark(nGames=range(1,21))
-        print(df)
+#        df = model.modelBenchmark(nGames=range(1,21))
+#        print(df)
         df = model.modelBenchmark(nGames=range(1,6))
         print(df)
 
@@ -133,5 +126,6 @@ if __name__== "__main__":
     np.random.seed(0)
 #    main1_playARandomGame()
     main2_simpleBenchmark()
-#    main3_initLearningPlayer()
-    main4_evaluateModels()
+    main3_initLearningPlayer()
+#    main4_evaluateModels()
+    
