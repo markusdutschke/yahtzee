@@ -610,7 +610,7 @@ class PlayerOneShotAI(AbstractPlayer):
         
         
     def cat_replay_memory_trunc(self):
-        self.crm = sorted(self.crm, key=lambda x: x[3])  # sort by score
+#        self.crm = sorted(self.crm, key=lambda x: x[3])  # sort by score
         self.crm = self.crm[-self.catMLParas['lenReplayMem']:]
     
     def xy_from_crm(self, crmElem):
@@ -1081,3 +1081,205 @@ class PlayerAI_1SEnc_6(PlayerOneShotAI):
         x[cat] = scoreBoard.check_points(dice, cat)
 
         return x
+
+class PlayerOneShotAI_new(AbstractPlayer):
+    """New AI Player concept.
+    
+    Regressor scrRgr focasts the rest score of the game
+    based on the empty categories of a score board.
+    
+    Categorie decision is made based on the direct reward 
+    + the reward forcast of the resulting scoreboard.
+    """
+    
+    def __init__(
+            self, mlpRgrArgs={'hidden_layer_sizes':(30, 25, 20)},
+            lenScrReplayMem=200, lenMiniBatch=30, gamma=.98):
+        """
+        mlpRgrArgs : dict
+            Arguments passed to MLPRegressor
+        lenScrReplayMem : int
+            Length of the replay memory for self.scrRgr training
+        lenMiniBatch : int
+            Number of samples used for each training iteration
+        gamma : 0 <= gamma <= 1
+            Damping factor for future rewards
+        """
+        super().__init__()
+        
+        self.scrRgr = MLPRegressor(**mlpRgrArgs)
+        self.srm = []
+        self.lenScrReplayMem = lenScrReplayMem
+        self.lenMiniBatch = lenMiniBatch
+        self.gamma = gamma
+        self.nGames = 0
+        
+    def choose_roll(self, scoreBoard, dice, attempt):
+        return [False]*5
+    
+    def choose_cat(self, scoreBoard, dice, debugLevel=0):
+        opts = self.eval_options_cat(scoreBoard, dice)
+        return opts[0][0]
+    
+    def eval_options_cat(self, scoreBoard, dice):
+        """Return a sorted list with the options to choose for cat and
+        the expected restScore.
+        """
+        opts = []
+        for cat in scoreBoard.open_cats():
+            directReward = scoreBoard.check_points(dice, cat)
+#            score = self.cat_predict(scoreBoard, dice, cat)
+#            assert len(score)==1
+#            score = score[0]
+            
+            # additionally consider the resulting state of the score board
+            tmpSB = scoreBoard.copy()
+            tmpSB.add(dice, cat)
+#            score += self.catMLParas['gamma'] * self.predict_score(tmpSB)
+            x = self.encode_scrRgr_x(scoreBoard).reshape(1, -1)
+            futureReward = self.srcRgr.predict(x)
+            
+            reward = directReward + futureReward
+            opts += [(cat, reward)]
+        opts = sorted(opts, key=lambda x: x[1], reverse=True)
+        return opts
+    
+    @property
+    def n_features(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 13
+    def encode_scrRgr_x(self, scoreBoard):
+        """Encodes a scoreboard to a numpy array,
+        which is used as the scrRgr input layer
+        """
+        x = np.zeros(shape=(self.n_features))
+        x[:13] = scoreBoard.mask.astype(int)
+        # todo: later add here upper sum for bonus consideration
+        return x
+    
+    def add_srm_sample(self, scoreBoard, restScore):
+        """Save memory in format x, y"""
+        x = self.encode_scrRgr_x(scoreBoard)
+        y = restScore
+        self.srm += [(x, y)]
+    
+    def truncate_srm(self):
+        """Reduce srm length to lenScrReplayMem to the most recent memories.
+        """
+        self.srm = self.srm[-self.lenScrReplayMem:]
+    
+    def train(self, nGames, pRand=.1, pRat=100):
+        """Training the Player with nGames and based on the trainers moves.
+    
+        Extended description of function.
+    
+        Parameters
+        ----------
+        nGames : int
+            Nomber of games
+        trainerEnsemble : PlayerEnsemble
+            Integer represents the weight of the specici players moves
+            player is someone doing decisions; None is self
+        pRat : float
+            predicted best action is pRat times as probable to choose as
+            the predicted most unfavourable action.
+    
+        Returns
+        -------
+        bool
+            Description of return value
+    
+        See Also
+        --------
+        otherfunc : some related other function
+    
+        Examples
+        --------
+        These are written in doctest format, and should illustrate how to
+        use the function.
+    
+        >>> a=[1,2,3]
+        >>> [x + 3 for x in a]
+        [4, 5, 6]
+        """
+        for gg in range(nGames):
+            game = Game()
+            sbs = []
+            for rr in range(13):
+                for aa in range(3):
+                    sbs += [game.sb]
+                    act, paras = game.ask_action()
+                    if aa < 2:
+                        sb, dice, attempt = paras
+                        game.perf_action(act,
+                                         self.choose_roll(sb, dice, attempt))
+                    else:
+                        sb, dice = paras
+                        if self.nGames == 0 or np.random.rand() <= pRand:
+                            cat = np.random.choice(sb.open_cats())
+                        else:
+                            opts = self.eval_options_cat(sb, dice)
+                            
+                            # chose an option for training which promisses a
+                            # high score. A weighted choose is performed where
+                            # the best option is pRat times as likely as
+                            # the worst option
+                            cs = [opt[0] for opt in opts]
+                            ws = [opt[1] for opt in opts]
+                            ws = np.array(ws) - np.amin(ws)
+                            if np.amax(ws) > 0:
+                                alpha = np.log(pRat)/np.amax(ws)
+                                ws = np.exp(alpha*ws)
+                                cat = weighted_choice(cs, ws)
+                            else:
+                                cat = opts[0][0]
+                        game.perf_action(act, cat)
+            sbs += [game.sb]
+            finalScore = game.sb.getSum()
+            for sb in sbs:
+                self.add_srm_sample(sb, finalScore-sb.getSum())
+
+            #create miniBatch
+            n_samples = self.lenMiniBatch
+            X = np.empty(shape=(n_samples, self.n_features))
+            y = np.empty(shape=(n_samples,))
+            for ind in range(n_samples):
+                xy = np.random.choice(self.srm)
+                X[ind, :] = xy[0]
+                y[ind] = xy[1]
+
+            self.scrRgr.partial_fit(X, y)
+            self.truncate_srm()
+            self.nGames += 1
+    
+    @classmethod
+    def modelBenchmark(cls, nGames=range(1,2), nInstances=50, *args, **kwargs):
+        np.random.seed(0)
+        df = pd.DataFrame(index=nGames)
+        df.index.name = 'nGames'
+#        print('inst', flush=True, end='; ')
+        for ii in progressbar(range(nInstances), 'Instances'):
+#            print(ii, flush=True, end='; ')
+            player = cls(*args, **kwargs)
+            means = []
+            stds = []
+            for gg in nGames:
+#                lp('game', gg)
+                assert gg > 0, 'number of games <= 0 makes no sense'
+                player.train(nGames=gg-player.nGames)
+                m, s = player.benchmark(nGames=50, nBins=10)
+                means += [m]
+                stds += [s]
+            df['inst_'+str(ii)] = means
+#        print()
+        res = pd.DataFrame()
+        res['mean'] = df.mean(axis=1)
+        res['sem'] = (df.std(axis=1)**2 + np.array(stds)**2)**.5 / nInstances**.5
+        res['max'] = df.max(axis=1)
+        res['min'] = df.min(axis=1)
+        return res #, df
+    
+    
+        

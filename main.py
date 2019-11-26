@@ -114,10 +114,11 @@ def main4_evaluateModels():
             bot.PlayerAI_1SEnc_6]:
         
         print('\n\n'+model.name)
-#        df = model.modelBenchmark(nGames=range(1,21))
-#        print(df)
-        df = model.modelBenchmark(nGames=range(1,6))
+        df = model.modelBenchmark(
+                nGames=[1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60])
         print(df)
+#        df = model.modelBenchmark(nGames=range(1,6))
+#        print(df)
 
 
 
@@ -126,6 +127,6 @@ if __name__== "__main__":
     np.random.seed(0)
 #    main1_playARandomGame()
     main2_simpleBenchmark()
-    main3_initLearningPlayer()
-#    main4_evaluateModels()
+#    main3_initLearningPlayer()
+    main4_evaluateModels()
     
