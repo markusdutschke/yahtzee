@@ -9,12 +9,16 @@ from comfct.debug import lp
 from abc import ABC, abstractmethod
 import numpy as np
 import random
+import pandas as pd
 #np.random.seed(0)
 from yahtzee import Game, ScoreBoard
 from sklearn.neural_network import MLPRegressor
 from sklearn.utils.validation import check_is_fitted
 from comfct.list import list_cast
 from comfct.numpy import weighted_choice
+#from tqdm import tqdm
+from progressbar import progressbar
+#from progress.bar import Bar
 
 #def benchmark(player, nGames=100):
 #    """Benchmarks Yahtzee decision making models.
@@ -257,7 +261,7 @@ class AbstractPlayer(ABC):  # abstract class
 #        lp(scores)
         scores = [np.mean(chunk) for chunk in np.array_split(scores, nBins)]
 #        lp(scores)
-        return np.mean(scores), np.std(scores)
+        return np.mean(scores), np.std(scores)/len(scores)**.5
     
 class PlayerRandomCrap(AbstractPlayer):
     """This player behaves completely random"""
@@ -466,7 +470,8 @@ class PlayerOneShotAI(AbstractPlayer):
 
     def __init__(
             self,
-            regressor=MLPRegressor(hidden_layer_sizes=(30, 25, 20)),
+            hidden_layer_sizes=(30, 25, 20),
+#            regressor=MLPRegressor(hidden_layer_sizes=(30, 25, 20)),
 #            debugLevel=0,
             catMLParas={'lenReplayMem': 200, 'lenMiniBatch': 30, 'gamma': .95}
 #            catReplayMemLen=1000,
@@ -476,7 +481,7 @@ class PlayerOneShotAI(AbstractPlayer):
 #            nGamesInit=1
             ):
         super().__init__()
-        self.rgr = regressor
+        self.rgr = MLPRegressor(hidden_layer_sizes=hidden_layer_sizes)
         self.nGames = 0
 #        self.debugLevel = debugLevel
         self.catMLParas = catMLParas
@@ -813,12 +818,17 @@ class PlayerOneShotAI(AbstractPlayer):
             y = np.empty(shape=(n_samples,))
             for ind in range(n_samples):
                 crmElem = np.random.choice(self.crm)
+#                if self.nGames == 0:
+#                    crmElem = self.crm[-1]
 #                lp(crmElem[1].vals, ScoreBoard.cats[crmElem[2]], crmElem[3])
+#                lp('Dice:', crmElem[1].vals)
+#                lp('Chosen cat:', ScoreBoard.cats[crmElem[2]], '; n open calts:', len(crmElem[0].open_cats()))
+#                lp('Result Score:', crmElem[3])
                 xy = self.xy_from_crm(crmElem)
                 X[ind, :] = xy[0]
                 y[ind] = xy[1]
-#                lp(X[ind,:])
-#                lp(y[ind])
+#                lp('X', X[ind,:])
+#                lp('y', y[ind])
 #            scoreBoards, dices, cats = self.games_to_cat_info(game)
 #            lp(scoreBoards)
 #            lp(dices)
@@ -828,16 +838,40 @@ class PlayerOneShotAI(AbstractPlayer):
             self.rgr.partial_fit(X, y)
             self.cat_replay_memory_trunc()
             self.nGames += 1
+    
+    @classmethod
+    def modelBenchmark(cls, nGames=range(1,2), nInstances=50, *args, **kwargs):
+        df = pd.DataFrame(index=nGames)
+        df.index.name = 'nGames'
+#        print('inst', flush=True, end='; ')
+        for ii in progressbar(range(nInstances), 'Instances'):
+#            print(ii, flush=True, end='; ')
+            player = cls(*args, **kwargs)
+            means = []
+            stds = []
+            for gg in nGames:
+#                lp('game', gg)
+                assert gg > 0, 'number of games <= 0 makes no sense'
+                player.train2(nGames=gg-player.nGames)
+                m, s = player.benchmark(nGames=50, nBins=10)
+                means += [m]
+                stds += [s]
+            df['inst_'+str(ii)] = means
+#        print()
+        res = pd.DataFrame()
+        res['mean'] = df.mean(axis=1)
+        res['sem'] = (df.std(axis=1)**2 + np.array(stds)**2)**.5 / nInstances**.5
+        res['max'] = df.max(axis=1)
+        res['min'] = df.min(axis=1)
+        return res #, df
 
 
 
 class PlayerAI_1SEnc_1(PlayerOneShotAI):
-    name = 'AI_1SEnc_Enc1'
+    name = 'AI 1S Enc 1Score13Scores'
     
-    def __init__(
-            self, regressor=MLPRegressor(hidden_layer_sizes=(20, 20, 25, 20),
-                                         )):
-        super().__init__(regressor)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 #        lp(self.rgr.get_params())
     @property
     def n_features(self):
@@ -846,8 +880,9 @@ class PlayerAI_1SEnc_1(PlayerOneShotAI):
         """
         return 1 + 13
     def encoder(self, scoreBoard, dice, cat):
-        """Encodes a game situation (decision input) as
-        array with elements in range 0 to 1.
+        """Encoding:
+        0: score in cat
+        1-13: scores in all cats
         """
         assert 0 <= cat <= 12
         x = np.zeros(shape=(self.n_features))
@@ -864,13 +899,11 @@ class PlayerAI_1SEnc_1(PlayerOneShotAI):
 
 
 class PlayerAI_1SEnc_2(PlayerOneShotAI):
-    name = 'AI_1SEnc_Enc2'
+    name = 'AI 1S Enc 2Sore13RelativeScores'
     
-    def __init__(
-            self, regressor=MLPRegressor(hidden_layer_sizes=(20, 20, 25, 20),
-                                         )):
-        super().__init__(regressor)
-#        lp(self.rgr.get_params())
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
     @property
     def n_features(self):
         """size or regressor input, reffers to MLPRegressor.fit
@@ -878,8 +911,10 @@ class PlayerAI_1SEnc_2(PlayerOneShotAI):
         """
         return 2 + 13
     def encoder(self, scoreBoard, dice, cat):
-        """Encodes a game situation (decision input) as
-        array with elements in range 0 to 1.
+        """Encoding:
+        0: score in cat
+        1: relative score in cat
+        2-14: all relative scores
         """
         assert 0 <= cat <= 12
         x = np.zeros(shape=(self.n_features))
@@ -898,13 +933,10 @@ class PlayerAI_1SEnc_2(PlayerOneShotAI):
 
 
 class PlayerAI_1SEnc_3(PlayerOneShotAI):
-    name = 'AI_1SEnc_trivEnc'
+    name = 'AI 1S Enc 1Score'
     
-    def __init__(
-            self, regressor=MLPRegressor(hidden_layer_sizes=(10, 10),
-                                         )):
-        super().__init__(regressor)
-#        lp(self.rgr.get_params())
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
     
     
     @property
@@ -914,11 +946,90 @@ class PlayerAI_1SEnc_3(PlayerOneShotAI):
         """
         return 1
     def encoder(self, scoreBoard, dice, cat):
-        """Encodes a game situation (decision input) as
-        array with elements in range 0 to 1.
+        """Encoding:
+        0: score in cat
         """
         assert 0 <= cat <= 12
         x = np.zeros(shape=(self.n_features))
         
         x[0] = scoreBoard.check_points(dice, cat)
+        return x
+
+class PlayerAI_1SEnc_4(PlayerOneShotAI):
+    name = 'AI 1S Enc 13Score13cats6Dice'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    
+    @property
+    def n_features(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 13 + 13 +6
+    def encoder(self, scoreBoard, dice, cat):
+        """Encoding:
+        13: cat flag
+        13: open cats without cat
+        6: dice hist
+        """
+        assert 0 <= cat <= 12
+        x = np.zeros(shape=(self.n_features))
+        
+        x[cat] = scoreBoard.check_points(dice, cat)
+        for cc in scoreBoard.open_cats():
+            x[13+cc] = 1
+        x[26:32] = np.histogram(dice.vals, bins=np.linspace(.5,6.5,7))[0]
+        return x
+
+class PlayerAI_1SEnc_5(PlayerOneShotAI):
+    name = 'AI 1S Enc 13Score13Scores'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+#        lp(self.rgr.get_params())
+    @property
+    def n_features(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 13 + 13
+    def encoder(self, scoreBoard, dice, cat):
+        """Encoding:
+        13: score in cat
+        13: scores in all cats
+        """
+        assert 0 <= cat <= 12
+        x = np.zeros(shape=(self.n_features))
+        
+        x[cat] = scoreBoard.check_points(dice, cat)
+        
+        for cc in scoreBoard.open_cats():
+            if cc==cat:
+                continue  # helps converging
+            x[13+cc] = scoreBoard.check_points(dice, cc)
+        return x
+
+class PlayerAI_1SEnc_6(PlayerOneShotAI):
+    name = 'AI 1S Enc 13Score'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+#        lp(self.rgr.get_params())
+    @property
+    def n_features(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 13
+    def encoder(self, scoreBoard, dice, cat):
+        """Encoding:
+        13: score in cat
+        """
+        assert 0 <= cat <= 12
+        x = np.zeros(shape=(self.n_features))
+        
+        x[cat] = scoreBoard.check_points(dice, cat)
+
         return x
