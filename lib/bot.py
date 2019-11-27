@@ -19,6 +19,9 @@ from comfct.numpy import weighted_choice
 #from tqdm import tqdm
 from progressbar import progressbar
 #from progress.bar import Bar
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+
 
 #def benchmark(player, nGames=100):
 #    """Benchmarks Yahtzee decision making models.
@@ -207,7 +210,7 @@ class AbstractPlayer(ABC):  # abstract class
         """
         pass
     
-    def benchmark(self, nGames=100, nBins=20):
+    def benchmark(self, nGames=100, nBins=20, seed=None):
         """Benchmarks Yahtzee decision making models.
         
         Extended description of function.
@@ -254,6 +257,8 @@ class AbstractPlayer(ABC):  # abstract class
         >>> [x + 3 for x in a]
         [4, 5, 6]
         """
+        if seed is not None:
+            np.random.seed(seed)
         scores = []
         for ii in range(nGames):
             game = Game(self)
@@ -262,6 +267,36 @@ class AbstractPlayer(ABC):  # abstract class
         scores = [np.mean(chunk) for chunk in np.array_split(scores, nBins)]
 #        lp(scores)
         return np.mean(scores), np.std(scores)/len(scores)**.5
+    
+    @classmethod
+    def modelBenchmark(cls, nGames=range(1,2), nInstances=50, *args, **kwargs):
+        if not hasattr(cls, 'train'):
+            nGames = [1]
+        
+        df = pd.DataFrame(index=nGames)
+        df.index.name = 'nGames'
+        
+        for ii in progressbar(range(nInstances), 'Instances'):
+            np.random.seed(ii)
+            player = cls(*args, **kwargs)
+            means = []
+            stds = []
+            for gg in nGames:
+#                lp('game', gg)
+                assert gg > 0, 'number of games <= 0 makes no sense'
+                if hasattr(cls, 'train'):
+                    player.train(nGames=gg-player.nGames)
+                m, s = player.benchmark(nGames=50, nBins=10)
+                means += [m]
+                stds += [s]
+            df['inst_'+str(ii)] = means
+
+        res = pd.DataFrame()
+        res['mean'] = df.mean(axis=1)
+        res['sem'] = (df.std(axis=1)**2 + np.array(stds)**2)**.5 / nInstances**.5
+        res['max'] = df.max(axis=1)
+        res['min'] = df.min(axis=1)
+        return res #, df
     
 class PlayerRandomCrap(AbstractPlayer):
     """This player behaves completely random"""
@@ -882,36 +917,37 @@ class PlayerOneShotAI(AbstractPlayer):
 #            lp(cats)
 #            X, y = self.cat_decision_parser(scoreBoards, dices, cats)
 
-            self.rgr.partial_fit(X, y)
+#            self.rgr.partial_fit(X, y)  # TODO self.scrRgr = self.scrRgr.partial_fit(X, y)
+            self.rgr = self.rgr.partial_fit(X, y)
             self.cat_replay_memory_trunc()
             self.nGames += 1
     
-    @classmethod
-    def modelBenchmark(cls, nGames=range(1,2), nInstances=50, *args, **kwargs):
-        np.random.seed(0)
-        df = pd.DataFrame(index=nGames)
-        df.index.name = 'nGames'
-#        print('inst', flush=True, end='; ')
-        for ii in progressbar(range(nInstances), 'Instances'):
-#            print(ii, flush=True, end='; ')
-            player = cls(*args, **kwargs)
-            means = []
-            stds = []
-            for gg in nGames:
-#                lp('game', gg)
-                assert gg > 0, 'number of games <= 0 makes no sense'
-                player.train2(nGames=gg-player.nGames)
-                m, s = player.benchmark(nGames=50, nBins=10)
-                means += [m]
-                stds += [s]
-            df['inst_'+str(ii)] = means
-#        print()
-        res = pd.DataFrame()
-        res['mean'] = df.mean(axis=1)
-        res['sem'] = (df.std(axis=1)**2 + np.array(stds)**2)**.5 / nInstances**.5
-        res['max'] = df.max(axis=1)
-        res['min'] = df.min(axis=1)
-        return res #, df
+#    @classmethod
+#    def modelBenchmark(cls, nGames=range(1,2), nInstances=50, *args, **kwargs):
+#        np.random.seed(0)
+#        df = pd.DataFrame(index=nGames)
+#        df.index.name = 'nGames'
+##        print('inst', flush=True, end='; ')
+#        for ii in progressbar(range(nInstances), 'Instances'):
+##            print(ii, flush=True, end='; ')
+#            player = cls(*args, **kwargs)
+#            means = []
+#            stds = []
+#            for gg in nGames:
+##                lp('game', gg)
+#                assert gg > 0, 'number of games <= 0 makes no sense'
+#                player.train2(nGames=gg-player.nGames)
+#                m, s = player.benchmark(nGames=50, nBins=10)
+#                means += [m]
+#                stds += [s]
+#            df['inst_'+str(ii)] = means
+##        print()
+#        res = pd.DataFrame()
+#        res['mean'] = df.mean(axis=1)
+#        res['sem'] = (df.std(axis=1)**2 + np.array(stds)**2)**.5 / nInstances**.5
+#        res['max'] = df.max(axis=1)
+#        res['min'] = df.min(axis=1)
+#        return res #, df
 
 
 
@@ -1093,8 +1129,8 @@ class PlayerOneShotAI_new(AbstractPlayer):
     """
     name = 'AI 1S scrRgr'
     def __init__(
-            self, mlpRgrArgs={'hidden_layer_sizes':(40, 50, 40, 25, 20, 10)},
-            lenScrReplayMem=200, lenMiniBatch=30, gamma=1):
+            self, mlpRgrArgs={'hidden_layer_sizes':(20, 10)},
+            lenScrReplayMem=13*100, lenMiniBatch=3000, gamma=1):
         """
         mlpRgrArgs : dict
             Arguments passed to MLPRegressor
@@ -1108,12 +1144,16 @@ class PlayerOneShotAI_new(AbstractPlayer):
         super().__init__()
         
         self.scrRgr = MLPRegressor(**mlpRgrArgs)
+#        self.scrRgr = MLPRegressor(hidden_layer_sizes=(40, 50, 40, 25, 20, 10))
         self.srm = []
         self.lenScrReplayMem = lenScrReplayMem
         self.lenMiniBatch = lenMiniBatch
         self.gamma = gamma
         self.nGames = 0
-        lp('todo check gamma=0')
+#        lp(self.scrRgr.get_params())
+#        assert False
+#        lp('todo check gamma=0')
+        
         
     def choose_roll(self, scoreBoard, dice, attempt):
         return [False]*5
@@ -1142,9 +1182,10 @@ class PlayerOneShotAI_new(AbstractPlayer):
 #            score += self.catMLParas['gamma'] * self.predict_score(tmpSB)
             x = self.encode_scrRgr_x(tmpSB).reshape(1, -1)
             futureReward = self.scrRgr.predict(x)[0]
+#            lp(x, futureReward)
             
             reward = directReward + self.gamma * futureReward
-            opts += [(cat, reward)]
+            opts += [(cat, reward, directReward, futureReward)]
             
             if debug==1:
                 lp(ScoreBoard.cats[cat], directReward, futureReward)
@@ -1185,7 +1226,7 @@ class PlayerOneShotAI_new(AbstractPlayer):
         """
         self.srm = self.srm[-self.lenScrReplayMem:]
     
-    def train(self, nGames, pRand=.1, pRat=100):
+    def train(self, nGames, pRand=0.1, pRat=100):
         """Training the Player with nGames and based on the trainers moves.
     
         Extended description of function.
@@ -1200,6 +1241,7 @@ class PlayerOneShotAI_new(AbstractPlayer):
         pRat : float
             predicted best action is pRat times as probable to choose as
             the predicted most unfavourable action.
+            None: switch of and the the best option
     
         Returns
         -------
@@ -1232,9 +1274,21 @@ class PlayerOneShotAI_new(AbstractPlayer):
                                          self.choose_roll(sb, dice, attempt))
                     else:
                         sb, dice = paras
-                        if self.nGames == 0 or np.random.rand() <= pRand:
+                        if self.nGames == 0 or np.random.rand() < pRand:
+#                            if self.nGames > 0:
+#                                assert False
                             cat = np.random.choice(sb.open_cats())
+                            
+                        elif pRat is None:
+                            cat = self.choose_cat(sb, dice)
+                            
+                            # for debugging
+#                            lp('choose cat:', ScoreBoard.cats[cat])
+#                            opts = self.eval_options_cat(sb, dice, debug=0)
+#                            lp(opts)
                         else:
+#                            if self.nGames > 0:
+#                                assert False
                             opts = self.eval_options_cat(sb, dice)
                             
                             # chose an option for training which promisses a
@@ -1253,58 +1307,72 @@ class PlayerOneShotAI_new(AbstractPlayer):
                         game.perf_action(act, cat)
 #                    lp(rr, aa, len(sbs))
             finalScore = game.sb.getSum()
-#            assert False
-            for sb in sbs:
-#                lp(self.nGames)
-#                print(1245, self.nGames)
-#                lp(sb)
-#                lp(finalScore,sb.getSum(),finalScore-sb.getSum())
-                self.add_srm_sample(sb, finalScore-sb.getSum())
-#            assert False
-            self.truncate_srm()
-
-            #create miniBatch
-            n_samples = self.lenMiniBatch
-            X = np.empty(shape=(n_samples, self.n_features))
-            y = np.empty(shape=(n_samples,))
-            for nn in range(n_samples):
-#                xy = np.random.choice(self.srm)
-                ind = np.random.choice(list(range(len(self.srm))))
-                xy = self.srm[ind]
-                X[nn, :] = xy[0]
-                y[nn] = xy[1]
-
-            self.scrRgr.partial_fit(X, y)
             
+            
+            for sb in sbs:
+#                lp(sb)
+#                lp(finalScore, sb.getSum(), finalScore-sb.getSum())
+                self.add_srm_sample(sb, finalScore-sb.getSum())
+            self.truncate_srm()
+            
+#            if True:
+            if self.nGames ==0:
+                n_samples = len(self.srm)
+                X = np.empty(shape=(n_samples, self.n_features))
+                y = np.empty(shape=(n_samples,))
+                for nn in range(n_samples):
+                    xy = self.srm[nn]
+                    X[nn, :] = xy[0]
+                    y[nn] = xy[1]
+#                self.scrRgr = self.scrRgr.fit(X, y)
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", category=ConvergenceWarning)
+                    self.scrRgr = self.scrRgr.fit(X, y)
+            else:
+            
+                #partial fit by miniBatch
+                n_samples = self.lenMiniBatch
+                X = np.empty(shape=(n_samples, self.n_features))
+                y = np.empty(shape=(n_samples,))
+                for nn in range(n_samples):
+                    ind = np.random.choice(list(range(len(self.srm))))
+                    xy = self.srm[ind]
+                    X[nn, :] = xy[0]
+                    y[nn] = xy[1]
+                self.scrRgr = self.scrRgr.partial_fit(X, y)
+
+#            for nn in range(n_samples):
+#                lp(nn, X[nn:nn+1, :], y[nn], self.scrRgr.predict(X[nn:nn+1, :]))
+
             self.nGames += 1
             
     
-    @classmethod
-    def modelBenchmark(cls, nGames=range(1,2), nInstances=50, *args, **kwargs):
-        np.random.seed(0)
-        df = pd.DataFrame(index=nGames)
-        df.index.name = 'nGames'
-#        print('inst', flush=True, end='; ')
-        for ii in progressbar(range(nInstances), 'Instances'):
-#            print(ii, flush=True, end='; ')
-            player = cls(*args, **kwargs)
-            means = []
-            stds = []
-            for gg in nGames:
-#                lp('game', gg)
-                assert gg > 0, 'number of games <= 0 makes no sense'
-                player.train(nGames=gg-player.nGames)
-                m, s = player.benchmark(nGames=50, nBins=10)
-                means += [m]
-                stds += [s]
-            df['inst_'+str(ii)] = means
-#        print()
-        res = pd.DataFrame()
-        res['mean'] = df.mean(axis=1)
-        res['sem'] = (df.std(axis=1)**2 + np.array(stds)**2)**.5 / nInstances**.5
-        res['max'] = df.max(axis=1)
-        res['min'] = df.min(axis=1)
-        return res #, df
+#    @classmethod
+#    def modelBenchmark(cls, nGames=range(1,2), nInstances=50, *args, **kwargs):
+#        np.random.seed(0)
+#        df = pd.DataFrame(index=nGames)
+#        df.index.name = 'nGames'
+##        print('inst', flush=True, end='; ')
+#        for ii in progressbar(range(nInstances), 'Instances'):
+##            print(ii, flush=True, end='; ')
+#            player = cls(*args, **kwargs)
+#            means = []
+#            stds = []
+#            for gg in nGames:
+##                lp('game', gg)
+#                assert gg > 0, 'number of games <= 0 makes no sense'
+#                player.train(nGames=gg-player.nGames)
+#                m, s = player.benchmark(nGames=50, nBins=10)
+#                means += [m]
+#                stds += [s]
+#            df['inst_'+str(ii)] = means
+##        print()
+#        res = pd.DataFrame()
+#        res['mean'] = df.mean(axis=1)
+#        res['sem'] = (df.std(axis=1)**2 + np.array(stds)**2)**.5 / nInstances**.5
+#        res['max'] = df.max(axis=1)
+#        res['min'] = df.min(axis=1)
+#        return res #, df
     
     
         

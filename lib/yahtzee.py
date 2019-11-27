@@ -249,14 +249,20 @@ class Game:
     """Stores a complete game"""
     
     def __init__(self, players=None):
+        
         self.catLog = []
         if not players is None:
+            self.log = []
             self.autoplay(players)
         else:
             self.sb = ScoreBoard()
             self.attempt = 0
             self.dice = Dice()
             self.waitForAction = False
+        
+        
+            self.log = [[self.sb.copy(), self.dice.copy()]]
+            
             
     def ask_action(self):
         assert self.waitForAction == False
@@ -276,16 +282,26 @@ class Game:
     
     def perf_action(self, act, para):
         assert self.waitForAction == True
+        
         if self.attempt < 2:
             assert act == 'choose_dice'
             self.dice.roll(para)
+            self.log[-1] += [para, self.dice.copy()]
         else:
             assert self.attempt == 2
             assert act == 'choose_cat'
             self.catLog += [(self.sb.copy(), self.dice, para)]
             self.sb.add(self.dice, para)
+            self.dice = Dice()
+            self.log[-1] += [para, 'no Info']
+            if len(self.sb.open_cats()) > 0:
+                self.log += [[self.sb.copy(), self.dice.copy()]]
+            
+            
         self.attempt = (self.attempt+1)%3
         self.waitForAction = False
+        
+
     
     def autoplay(self, players):
         """Plays and stores a Yahtzee game.
@@ -336,7 +352,7 @@ class Game:
         assert len(players) == 3*13, str(players)
         player = iter(players)
         
-        self.log = []
+#        self.log = []
 #        self.catLog = []  # log for cat decision learning
         sb = ScoreBoard()
         for cc in range(0,13):
@@ -356,11 +372,12 @@ class Game:
             plyr = next(player)
             deci = plyr.choose_cat(sb, dice)
             try:
-                opts = plyr.eval_options_cat(sb, dice, debug=1)
+                opts = plyr.eval_options_cat(sb, dice)
 #                opts = plyr.eval_cats(sb, dice)
                 info = '\n\t' + '\n\t'.join([
-                        '{:}: {:.2f}'.format(ScoreBoard.cats[cat], score)
-                        for cat, score in opts])
+                        '{:}: {:.2f} + {:.2f} = {:.2f}'.format(
+                                ScoreBoard.cats[cat], dirRew, futRew, rew)
+                        for cat, rew, dirRew, futRew in opts])
             except:
                 info = 'No info for ' + plyr.name
             self.catLog += [(sb.copy(), dice, deci)]
@@ -424,12 +441,13 @@ class Game:
     def __str__(self, debugLevel=0):
         _str = ''
         # sort log by categories
+#        lp(self.log)
         dfLog = pd.DataFrame(
                 self.log, columns=['scores',
                                    'dice0', 'deci0',
                                    'dice1', 'deci1',
                                    'dice2', 'deci2', 'info2'])
-#        lp(dfLog['deci2'])
+#        lp(dfLog)
         dfLog.index.name ='round'
         
         if debugLevel >= 1:
