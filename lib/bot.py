@@ -1118,6 +1118,9 @@ class PlayerAI_1SEnc_6(PlayerOneShotAI):
 
         return x
 
+
+            
+    
 class PlayerOneShotAI_new(AbstractPlayer):
     """New AI Player concept.
     
@@ -1345,34 +1348,251 @@ class PlayerOneShotAI_new(AbstractPlayer):
 #                lp(nn, X[nn:nn+1, :], y[nn], self.scrRgr.predict(X[nn:nn+1, :]))
 
             self.nGames += 1
-            
+
+
+
+
+class PlayerOneShotAI_v2(AbstractPlayer):
+    """New AI Player concept.
     
-#    @classmethod
-#    def modelBenchmark(cls, nGames=range(1,2), nInstances=50, *args, **kwargs):
-#        np.random.seed(0)
-#        df = pd.DataFrame(index=nGames)
-#        df.index.name = 'nGames'
-##        print('inst', flush=True, end='; ')
-#        for ii in progressbar(range(nInstances), 'Instances'):
-##            print(ii, flush=True, end='; ')
-#            player = cls(*args, **kwargs)
-#            means = []
-#            stds = []
-#            for gg in nGames:
-##                lp('game', gg)
-#                assert gg > 0, 'number of games <= 0 makes no sense'
-#                player.train(nGames=gg-player.nGames)
-#                m, s = player.benchmark(nGames=50, nBins=10)
-#                means += [m]
-#                stds += [s]
-#            df['inst_'+str(ii)] = means
-##        print()
-#        res = pd.DataFrame()
-#        res['mean'] = df.mean(axis=1)
-#        res['sem'] = (df.std(axis=1)**2 + np.array(stds)**2)**.5 / nInstances**.5
-#        res['max'] = df.max(axis=1)
-#        res['min'] = df.min(axis=1)
-#        return res #, df
+    Regressor scrRgr focasts the rest score of the game
+    based on the empty categories of a score board.
     
-    
+    Categorie decision is made based on the direct reward 
+    + the reward forcast of the resulting scoreboard.
+    """
+    name = 'AI 1S scrRgr'
+    def __init__(
+            self, mlpRgrArgs={'hidden_layer_sizes':(20, 10)},
+            lenScrReplayMem=13*100, lenMiniBatch=3000, gamma=1):
+        """
+        mlpRgrArgs : dict
+            Arguments passed to MLPRegressor
+        lenScrReplayMem : int
+            Length of the replay memory for self.scrRgr training
+        lenMiniBatch : int
+            Number of samples used for each training iteration
+        gamma : 0 <= gamma <= 1
+            Damping factor for future rewards
+        """
+        super().__init__()
         
+        self.scrRgr = MLPRegressor(**mlpRgrArgs)
+#        self.scrRgr = MLPRegressor(hidden_layer_sizes=(40, 50, 40, 25, 20, 10))
+        self.srm = []
+        self.lenScrReplayMem = lenScrReplayMem
+        self.lenMiniBatch = lenMiniBatch
+        self.gamma = gamma
+        self.nGames = 0
+#        lp(self.scrRgr.get_params())
+#        assert False
+#        lp('todo check gamma=0')
+        
+        
+    def choose_roll(self, scoreBoard, dice, attempt):
+        return [False]*5
+    
+    def choose_cat(self, scoreBoard, dice, debugLevel=0):
+        opts = self.eval_options_cat(scoreBoard, dice)
+        return opts[0][0]
+    
+    def eval_options_cat(self, scoreBoard, dice, debug=0):
+        """Return a sorted list with the options to choose for cat and
+        the expected restScore.
+        """
+        opts = []
+        if debug==1:
+            lp('todo: check reward', self.gamma)
+            lp(scoreBoard, dice)
+        for cat in scoreBoard.open_cats():
+            directReward = scoreBoard.check_points(dice, cat)
+#            score = self.cat_predict(scoreBoard, dice, cat)
+#            assert len(score)==1
+#            score = score[0]
+            
+            # additionally consider the resulting state of the score board
+            tmpSB = scoreBoard.copy()
+            tmpSB.add(dice, cat)
+#            score += self.catMLParas['gamma'] * self.predict_score(tmpSB)
+            x = self.encode_scrRgr_x(tmpSB).reshape(1, -1)
+            futureReward = self.scrRgr.predict(x)[0]
+#            lp(x, futureReward)
+            
+            reward = directReward + self.gamma * futureReward
+            opts += [(cat, reward, directReward, futureReward)]
+            
+            if debug==1:
+                lp(ScoreBoard.cats[cat], directReward, futureReward)
+            
+        opts = sorted(opts, key=lambda x: x[1], reverse=True)
+        if debug==1:
+            lp(opts)
+        return opts
+    
+    @property
+    def n_features(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 13
+    def encode_scrRgr_x(self, scoreBoard):
+        """Encodes a scoreboard to a numpy array,
+        which is used as the scrRgr input layer
+        """
+        x = np.zeros(shape=(self.n_features))
+        x[:13] = scoreBoard.mask.astype(int)
+        # todo: later add here upper sum for bonus consideration
+#        lp('todo check encoding')
+#        lp(scoreBoard)
+#        lp(x)
+        return x
+    
+    def add_sbs_to_srm(self, sbs):
+        """Add expereience to score regressor memory
+        sb : ScoreBoard
+        reward int
+        """
+        for ii in range(len(sbs)-1):
+            sb1 = sbs[ii]
+            sb2 = sbs[ii+1]
+            reward = sb2.getSum() - sb1.getSum()
+            self.srm += [(sb1, reward, sb2)]
+        self.truncate_srm()
+
+    
+    def truncate_srm(self):
+        """Reduce srm length to lenScrReplayMem to the most recent memories.
+        """
+        self.srm = self.srm[-self.lenScrReplayMem:]
+    
+    def train(self, nGames, pRand=0.1, pRat=100):
+        """Training the Player with nGames and based on the trainers moves.
+    
+        Extended description of function.
+    
+        Parameters
+        ----------
+        nGames : int
+            Nomber of games
+        trainerEnsemble : PlayerEnsemble
+            Integer represents the weight of the specici players moves
+            player is someone doing decisions; None is self
+        pRat : float
+            predicted best action is pRat times as probable to choose as
+            the predicted most unfavourable action.
+            None: switch of and the the best option
+    
+        Returns
+        -------
+        bool
+            Description of return value
+    
+        See Also
+        --------
+        otherfunc : some related other function
+    
+        Examples
+        --------
+        These are written in doctest format, and should illustrate how to
+        use the function.
+    
+        >>> a=[1,2,3]
+        >>> [x + 3 for x in a]
+        [4, 5, 6]
+        """
+        for gg in range(nGames):
+            game = Game()
+            sbs = []
+            #initial training round
+            if self.nGames == 0:
+                for rr in range(13):
+                    sbs += [game.sb.copy()]  # only for every round
+                    for aa in range(3):
+                        act, paras = game.ask_action()
+                        if aa < 2:
+                            sb, dice, attempt = paras
+                            game.perf_action(act,
+                                             self.choose_roll(sb, dice, attempt))
+                        else:
+                            sb, dice = paras
+                            cat = np.random.choice(sb.open_cats())
+                            game.perf_action(act, cat)
+                sbs += [game.sb.copy()]
+                self.add_sbs_to_srm(sbs)
+                continue
+                            
+                        
+            for rr in range(13):
+                sbs += [game.sb.copy()]  # only for every round
+                for aa in range(3):
+                    act, paras = game.ask_action()
+                    if aa < 2:
+                        sb, dice, attempt = paras
+                        game.perf_action(act,
+                                         self.choose_roll(sb, dice, attempt))
+                    else:
+                        sb, dice = paras
+                        if np.random.rand() < pRand:
+                            cat = np.random.choice(sb.open_cats())            
+                        elif pRat is None:
+                            cat = self.choose_cat(sb, dice)
+                        else:
+                            opts = self.eval_options_cat(sb, dice)
+                            
+                            # chose an option for training which promisses a
+                            # high score. A weighted choose is performed where
+                            # the best option is pRat times as likely as
+                            # the worst option
+                            cs = [opt[0] for opt in opts]
+                            ws = [opt[1] for opt in opts]
+                            ws = np.array(ws) - np.amin(ws)
+                            if np.amax(ws) > 0:
+                                alpha = np.log(pRat)/np.amax(ws)
+                                ws = np.exp(alpha*ws)
+                                cat = weighted_choice(cs, ws)
+                            else:
+                                cat = opts[0][0]
+                        game.perf_action(act, cat)
+#                    lp(rr, aa, len(sbs))
+            sbs += [game.sb.copy()]
+            self.add_sbs_to_srm(sbs)
+#            finalScore = game.sb.getSum()
+            
+            
+#            for sb in sbs:
+##                lp(sb)
+##                lp(finalScore, sb.getSum(), finalScore-sb.getSum())
+#                self.add_srm_sample(sb, finalScore-sb.getSum())
+            
+            
+#            if True:
+            if self.nGames ==0:
+                n_samples = len(self.srm)
+                X = np.empty(shape=(n_samples, self.n_features))
+                y = np.empty(shape=(n_samples,))
+                for nn in range(n_samples):
+                    sb1, reward, sb2 = self.srm[nn]
+                    X[nn, :] = self.encode_scrRgr_x(sb1).reshape(1,-1)
+                    y[nn] = reward
+#                self.scrRgr = self.scrRgr.fit(X, y)
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", category=ConvergenceWarning)
+                    self.scrRgr = self.scrRgr.fit(X, y)
+                
+            else:
+                assert False
+                #partial fit by miniBatch
+                n_samples = self.lenMiniBatch
+                X = np.empty(shape=(n_samples, self.n_features))
+                y = np.empty(shape=(n_samples,))
+                for nn in range(n_samples):
+                    ind = np.random.choice(list(range(len(self.srm))))
+                    xy = self.srm[ind]
+                    X[nn, :] = xy[0]
+                    y[nn] = xy[1]
+                self.scrRgr = self.scrRgr.partial_fit(X, y)
+
+#            for nn in range(n_samples):
+#                lp(nn, X[nn:nn+1, :], y[nn], self.scrRgr.predict(X[nn:nn+1, :]))
+
+            self.nGames += 1
