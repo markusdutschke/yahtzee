@@ -68,17 +68,18 @@ def main3_initLearningPlayer():
     print('Benchmark Intelligent Players:')
 #    players = [PlayerOneShotAI(), PlayerOneShortAISmartEnc()]
     players = [
+            bot.PlayerOneShotAI_new(),
 #            bot.PlayerAI_1SEnc_1(),
-            bot.PlayerAI_1SEnc_2(),
-            bot.PlayerAI_1SEnc_3(),
+#            bot.PlayerAI_1SEnc_2(),
+#            bot.PlayerAI_1SEnc_3(),
 #            bot.PlayerAI_1SEnc_4(),
 #            bot.PlayerAI_1SEnc_5(),
-            bot.PlayerAI_1SEnc_6(),
+#            bot.PlayerAI_1SEnc_6(),
                ]
     
-    nGames = [1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
+#    nGames = [1, 1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
 #    nGames = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-#    nGames = np.arange(1,101,1)
+    nGames = np.arange(1,11,1)
 #    nGames = [1, 5, 10, 15, 20]
     for nT in nGames:
         nT = int(nT)
@@ -90,28 +91,31 @@ def main3_initLearningPlayer():
 ##                    (1, bot.PlayerOneShotHero())
 #                    ])
 #            player.train(nGames=nT-player.nGames, trainerEnsemble=trainerEnsemble)
-            player.train2(nGames=nT-player.nGames)
+            player.train(nGames=nT-player.nGames)
             m, s = player.benchmark()
             name = player.name + ' ('+str(player.nGames) + ' games)'
             print('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
             
-#            if m > 110:
-#                np.random.seed(0)
-#                print(Game(player).__str__(debugLevel=1))
-#                print(Game(player).__str__(debugLevel=1))
-#                assert False
+            if m > 115:
+#            if player.nGames >=3:
+                np.random.seed(0)
+                print(Game(player).__str__(debugLevel=1))
+                print(Game(player).__str__(debugLevel=1))
+                assert False
 
         print('\t-')
     
 
 def main4_evaluateModels():
     for model in [
+            bot.PlayerOneShotAI_new,
 #            bot.PlayerAI_1SEnc_1,
             bot.PlayerAI_1SEnc_2,
             bot.PlayerAI_1SEnc_3,
 #            bot.PlayerAI_1SEnc_4,
 #            bot.PlayerAI_1SEnc_5,
-            bot.PlayerAI_1SEnc_6]:
+#            bot.PlayerAI_1SEnc_6,
+            ]:
         
         print('\n\n'+model.name)
         df = model.modelBenchmark(
@@ -127,6 +131,6 @@ if __name__== "__main__":
     np.random.seed(0)
 #    main1_playARandomGame()
     main2_simpleBenchmark()
-#    main3_initLearningPlayer()
-    main4_evaluateModels()
+    main3_initLearningPlayer()
+#    main4_evaluateModels()
     

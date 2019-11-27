@@ -236,7 +236,7 @@ class ScoreBoard:
 #        print()
         for ii in range(13):
             if ii == 6:
-                print('-'*34)
+                _str += ('-'*34 + '\n')
             score = '--' if self.scores.mask[ii] else str(self.scores[ii])
             _str += ('{:16}: {:2}'.format(ScoreBoard.cats[ii], score) + '\n')
         _str += ('='*34 + '\n')
@@ -356,7 +356,8 @@ class Game:
             plyr = next(player)
             deci = plyr.choose_cat(sb, dice)
             try:
-                opts = plyr.eval_cats(sb, dice)
+                opts = plyr.eval_options_cat(sb, dice, debug=1)
+#                opts = plyr.eval_cats(sb, dice)
                 info = '\n\t' + '\n\t'.join([
                         '{:}: {:.2f}'.format(ScoreBoard.cats[cat], score)
                         for cat, score in opts])

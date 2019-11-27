@@ -693,7 +693,7 @@ class PlayerOneShotAI(AbstractPlayer):
         # hopefully learns bonus by itsself
 #        x[0, 31] = np.sum(roundLog[0].data[:6]) / 105  # upper sum for bonus
     
-    def train(self, nGames,
+    def train_dep(self, nGames,
               trainerEnsemble=PlayerEnsemble(
                       [(1, PlayerRandomCrap())]
                       )):
@@ -770,7 +770,7 @@ class PlayerOneShotAI(AbstractPlayer):
             self.rgr.partial_fit(X, y)
             self.nGames += 1
             
-    def train2(self, nGames, pRand=.1, pRat=100):
+    def train(self, nGames, pRand=.1, pRat=100):
         """Training the Player with nGames and based on the trainers moves.
     
         Extended description of function.
@@ -1091,10 +1091,10 @@ class PlayerOneShotAI_new(AbstractPlayer):
     Categorie decision is made based on the direct reward 
     + the reward forcast of the resulting scoreboard.
     """
-    
+    name = 'AI 1S scrRgr'
     def __init__(
-            self, mlpRgrArgs={'hidden_layer_sizes':(30, 25, 20)},
-            lenScrReplayMem=200, lenMiniBatch=30, gamma=.98):
+            self, mlpRgrArgs={'hidden_layer_sizes':(40, 50, 40, 25, 20, 10)},
+            lenScrReplayMem=200, lenMiniBatch=30, gamma=1):
         """
         mlpRgrArgs : dict
             Arguments passed to MLPRegressor
@@ -1113,6 +1113,7 @@ class PlayerOneShotAI_new(AbstractPlayer):
         self.lenMiniBatch = lenMiniBatch
         self.gamma = gamma
         self.nGames = 0
+        lp('todo check gamma=0')
         
     def choose_roll(self, scoreBoard, dice, attempt):
         return [False]*5
@@ -1121,11 +1122,14 @@ class PlayerOneShotAI_new(AbstractPlayer):
         opts = self.eval_options_cat(scoreBoard, dice)
         return opts[0][0]
     
-    def eval_options_cat(self, scoreBoard, dice):
+    def eval_options_cat(self, scoreBoard, dice, debug=0):
         """Return a sorted list with the options to choose for cat and
         the expected restScore.
         """
         opts = []
+        if debug==1:
+            lp('todo: check reward', self.gamma)
+            lp(scoreBoard, dice)
         for cat in scoreBoard.open_cats():
             directReward = scoreBoard.check_points(dice, cat)
 #            score = self.cat_predict(scoreBoard, dice, cat)
@@ -1136,12 +1140,18 @@ class PlayerOneShotAI_new(AbstractPlayer):
             tmpSB = scoreBoard.copy()
             tmpSB.add(dice, cat)
 #            score += self.catMLParas['gamma'] * self.predict_score(tmpSB)
-            x = self.encode_scrRgr_x(scoreBoard).reshape(1, -1)
-            futureReward = self.srcRgr.predict(x)
+            x = self.encode_scrRgr_x(tmpSB).reshape(1, -1)
+            futureReward = self.scrRgr.predict(x)[0]
             
-            reward = directReward + futureReward
+            reward = directReward + self.gamma * futureReward
             opts += [(cat, reward)]
+            
+            if debug==1:
+                lp(ScoreBoard.cats[cat], directReward, futureReward)
+            
         opts = sorted(opts, key=lambda x: x[1], reverse=True)
+        if debug==1:
+            lp(opts)
         return opts
     
     @property
@@ -1157,13 +1167,18 @@ class PlayerOneShotAI_new(AbstractPlayer):
         x = np.zeros(shape=(self.n_features))
         x[:13] = scoreBoard.mask.astype(int)
         # todo: later add here upper sum for bonus consideration
+#        lp('todo check encoding')
+#        lp(scoreBoard)
+#        lp(x)
         return x
     
     def add_srm_sample(self, scoreBoard, restScore):
         """Save memory in format x, y"""
         x = self.encode_scrRgr_x(scoreBoard)
         y = restScore
+#        lp(x, y)
         self.srm += [(x, y)]
+#        lp(self.srm)
     
     def truncate_srm(self):
         """Reduce srm length to lenScrReplayMem to the most recent memories.
@@ -1208,8 +1223,8 @@ class PlayerOneShotAI_new(AbstractPlayer):
             game = Game()
             sbs = []
             for rr in range(13):
+                sbs += [game.sb.copy()]  # only for every round
                 for aa in range(3):
-                    sbs += [game.sb]
                     act, paras = game.ask_action()
                     if aa < 2:
                         sb, dice, attempt = paras
@@ -1236,23 +1251,33 @@ class PlayerOneShotAI_new(AbstractPlayer):
                             else:
                                 cat = opts[0][0]
                         game.perf_action(act, cat)
-            sbs += [game.sb]
+#                    lp(rr, aa, len(sbs))
             finalScore = game.sb.getSum()
+#            assert False
             for sb in sbs:
+#                lp(self.nGames)
+#                print(1245, self.nGames)
+#                lp(sb)
+#                lp(finalScore,sb.getSum(),finalScore-sb.getSum())
                 self.add_srm_sample(sb, finalScore-sb.getSum())
+#            assert False
+            self.truncate_srm()
 
             #create miniBatch
             n_samples = self.lenMiniBatch
             X = np.empty(shape=(n_samples, self.n_features))
             y = np.empty(shape=(n_samples,))
-            for ind in range(n_samples):
-                xy = np.random.choice(self.srm)
-                X[ind, :] = xy[0]
-                y[ind] = xy[1]
+            for nn in range(n_samples):
+#                xy = np.random.choice(self.srm)
+                ind = np.random.choice(list(range(len(self.srm))))
+                xy = self.srm[ind]
+                X[nn, :] = xy[0]
+                y[nn] = xy[1]
 
             self.scrRgr.partial_fit(X, y)
-            self.truncate_srm()
+            
             self.nGames += 1
+            
     
     @classmethod
     def modelBenchmark(cls, nGames=range(1,2), nInstances=50, *args, **kwargs):
