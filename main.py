@@ -85,9 +85,9 @@ def main3_initLearningPlayer():
                ]
     
     nGames = [1, 1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
-    nGames = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-    nGames = np.arange(1,200,5)
-    nGames = np.arange(1,200,1)
+#    nGames = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+#    nGames = np.arange(1,200,5)
+#    nGames = np.arange(1,200,1)
 #    nGames = [1, 5, 10, 15, 20]
     for nT in nGames:
         nT = int(nT)
