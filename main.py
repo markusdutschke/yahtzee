@@ -106,7 +106,7 @@ def main3_initLearningPlayer():
 #            assert False
             m, s = player.benchmark(seed=None)
             name = player.name + ' ('+str(player.nGames) + ' games)'
-            print('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
+            lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
             
             
 #            if m > 115:

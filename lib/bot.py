@@ -1687,9 +1687,10 @@ class PlayerAI_full_v0(AbstractPlayer):
     def __init__(
             self,
             scrRgrArgs={'hidden_layer_sizes':(20, 10)},
-            lenScrReplayMem=13*10, lenScrMiniBatch=3000,
+            lenScrReplayMem=13*100, lenScrMiniBatch=13*10,
             rrRgrArgs={'hidden_layer_sizes':(20, 10)},
-            lenRrReplayMem=26*10, lenRrMiniBatch=6000,
+            lenRrReplayMem=26*100, lenRrMiniBatch=26*10,
+            nIterPartFit=30,
             gamma=1):
         """
         mlpRgrArgs : dict
@@ -1712,6 +1713,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         self.lenScrMiniBatch = lenScrMiniBatch
         self.lenRrReplayMem = lenRrReplayMem
         self.lenRrMiniBatch = lenRrMiniBatch
+        self.nIterPartFit = nIterPartFit
         self.gamma = gamma
         self.nGames = 0
 #        lp(self.scrRgr.get_params())
@@ -1962,8 +1964,10 @@ class PlayerAI_full_v0(AbstractPlayer):
                     xSb2 = self.encode_scrRgr_x(sb2).reshape(1,-1)
                     futRew = self.scrRgr.predict(xSb2)[0]
                     y[nn] = dirRew + self.gamma * futRew
-
-                self.scrRgr = self.scrRgr.partial_fit(X, y)
+                
+                for ii in range(self.nIterPartFit):
+                    # perform multiple fit iterations
+                    self.scrRgr = self.scrRgr.partial_fit(X, y)
 
 #            for nn in range(n_samples):
 #                lp(nn, X[nn:nn+1, :], y[nn], self.scrRgr.predict(X[nn:nn+1, :]))
