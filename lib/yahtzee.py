@@ -43,7 +43,7 @@ class Dice:
 #            raise StopIteration
     
     def roll(self, arr):
-        """arr is a boolen array"""
+        """arr is a boolen array: True->reroll this dice"""
         assert len(arr) == 5
 #        lp(self.vals)
 #        lp(arr)
@@ -359,11 +359,11 @@ class Game:
             roundLog = [sb.copy()]
             
             dice = Dice()
-            deci = next(player).choose_roll(sb, dice, 0)
+            deci = next(player).choose_reroll(sb, dice, 0)
             roundLog += [dice.copy(), deci]
             
             dice.roll(deci)
-            deci = next(player).choose_roll(sb, dice, 1)
+            deci = next(player).choose_reroll(sb, dice, 1)
             roundLog += [dice.copy(), deci]
             
             # choose cat

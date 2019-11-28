@@ -58,7 +58,11 @@ def main1_playARandomGame():
 
 def main2_simpleBenchmark():
     print('Benchmark Classic Players:')
-    for player in [bot.PlayerRandomCrap(), bot.PlayerOneShotHero()]:
+    for player in [bot.PlayerRandomCrap(),
+                   bot.PlayerOneShotHero(),
+                   bot.Player1ShotMarkus(),
+#                   bot.Player1ShotMonteCarlo(),
+                   ]:
 #        m, s = benchmark(player, nGames=100)
         m, s = player.benchmark()
         print('\t{:50} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
@@ -68,7 +72,7 @@ def main3_initLearningPlayer():
     print('Benchmark Intelligent Players:')
 #    players = [PlayerOneShotAI(), PlayerOneShortAISmartEnc()]
     players = [
-            bot.PlayerOneShotAI_v2(),
+#            bot.PlayerOneShotAI_v2(),
 #            bot.PlayerOneShotAI_new(),
 #            bot.PlayerAI_1SEnc_1(),
 #            bot.PlayerAI_1SEnc_2(),
@@ -76,11 +80,14 @@ def main3_initLearningPlayer():
 #            bot.PlayerAI_1SEnc_4(),
 #            bot.PlayerAI_1SEnc_5(),
 #            bot.PlayerAI_1SEnc_6(),
+#            bot.Player1ShotMarkus(),
+            bot.PlayerAI_full_v0(),
                ]
     
     nGames = [1, 1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
     nGames = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
     nGames = np.arange(1,200,5)
+    nGames = np.arange(1,6,1)
 #    nGames = [1, 5, 10, 15, 20]
     for nT in nGames:
         nT = int(nT)
@@ -92,7 +99,10 @@ def main3_initLearningPlayer():
 ##                    (1, bot.PlayerOneShotHero())
 #                    ])
 #            player.train(nGames=nT-player.nGames, trainerEnsemble=trainerEnsemble)
-            player.train(nGames=nT-player.nGames)
+            if hasattr(player, 'train'):
+                player.train(nGames=nT-player.nGames)
+            else:
+                player.nGames = 0
 #            assert False
             m, s = player.benchmark(seed=None)
             name = player.name + ' ('+str(player.nGames) + ' games)'
@@ -100,7 +110,7 @@ def main3_initLearningPlayer():
             
             
 #            if m > 115:
-#            if player.nGames >=6:
+##            if player.nGames >=6:
 #                np.random.seed(0)
 #                print(Game(player).__str__(debugLevel=1))
 #                print(Game(player).__str__(debugLevel=1))
@@ -115,7 +125,9 @@ def main4_evaluateModels():
 #             dict(mlpRgrArgs={'hidden_layer_sizes':(40, 50, 40, 25, 20, 10)})),
 #             (bot.PlayerOneShotAI_new,
 #             dict(mlpRgrArgs={'hidden_layer_sizes':(30, 20, 15)})),
-             bot.PlayerOneShotHero,
+#             bot.PlayerOneShotHero,
+             bot.Player1ShotMarkus,
+#             bot.Player1ShotMonteCarlo,
 #             (bot.PlayerOneShotAI_new, {}),
              (bot.PlayerOneShotAI_v2, {}),
 #            bot.PlayerAI_1SEnc_1,
@@ -129,9 +141,12 @@ def main4_evaluateModels():
         if isinstance(model, tuple):
             model, kwargs = model
         print('\n\n'+model.name)
-        df = model.modelBenchmark(
-                nGames=[1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60],
-                **kwargs)
+        
+        nGames = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
+        nGames = [1, 5, 10, 15, 20]
+        nGames = [1, 2, 3]
+        
+        df = model.modelBenchmark(nGames=nGames, **kwargs)
         print(df)
 #        df = model.modelBenchmark(
 #                nGames=[1, 2],
