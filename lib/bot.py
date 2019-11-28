@@ -1687,10 +1687,10 @@ class PlayerAI_full_v0(AbstractPlayer):
     def __init__(
             self,
             scrRgrArgs={'hidden_layer_sizes':(20, 10)},
-            lenScrReplayMem=13*100, lenScrMiniBatch=13*10,
-            rrRgrArgs={'hidden_layer_sizes':(20, 10)},
-            lenRrReplayMem=26*100, lenRrMiniBatch=26*10,
-            nIterPartFit=30,
+            lenScrReplayMem=13*100, lenScrMiniBatch=13*50,
+            rrRgrArgs={'hidden_layer_sizes':(40, 40, 40, 40, 40, 10)},
+            lenRrReplayMem=26*100, lenRrMiniBatch=26*50,
+            nIterPartFit=5,
             gamma=1):
         """
         mlpRgrArgs : dict
