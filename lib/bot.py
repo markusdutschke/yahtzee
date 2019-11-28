@@ -1720,7 +1720,8 @@ class PlayerAI_full_v0(AbstractPlayer):
         
         
     def choose_reroll(self, scoreBoard, dice, attempt):
-        return [False]*5
+        opts = self.eval_options_reroll(scoreBoard, dice, attempt)
+        return opts[0][0]
     
     def choose_cat(self, scoreBoard, dice, debugLevel=0):
         opts = self.eval_options_cat(scoreBoard, dice)
@@ -1759,7 +1760,7 @@ class PlayerAI_full_v0(AbstractPlayer):
             lp(opts)
         return opts
     
-    def eval_options_reroll(self, sb, att, dice):
+    def eval_options_reroll(self, sb, dice, att):
         opts = []
         for reroll in product([True, False], repeat=5):
 #            lp(reroll)
@@ -1996,7 +1997,7 @@ class PlayerAI_full_v0(AbstractPlayer):
                     if att == 0:
 #                        xNext = self.encode_rrRgr_x(sb, att, dice0, reroll)
 #                            .reshape(1,-1))
-                        opts = self.eval_options_reroll(sb, 1, diceNew)
+                        opts = self.eval_options_reroll(sb, diceNew, 1)
                         y[nn] = opts[0][1]
                     elif att == 1:
                         opts = self.eval_options_cat(sb, diceNew)
