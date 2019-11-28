@@ -68,7 +68,8 @@ def main3_initLearningPlayer():
     print('Benchmark Intelligent Players:')
 #    players = [PlayerOneShotAI(), PlayerOneShortAISmartEnc()]
     players = [
-            bot.PlayerOneShotAI_new(),
+            bot.PlayerOneShotAI_v2(),
+#            bot.PlayerOneShotAI_new(),
 #            bot.PlayerAI_1SEnc_1(),
 #            bot.PlayerAI_1SEnc_2(),
 #            bot.PlayerAI_1SEnc_3(),
@@ -79,7 +80,7 @@ def main3_initLearningPlayer():
     
     nGames = [1, 1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
     nGames = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-#    nGames = np.arange(1,200,5)
+    nGames = np.arange(1,200,5)
 #    nGames = [1, 5, 10, 15, 20]
     for nT in nGames:
         nT = int(nT)
@@ -115,8 +116,8 @@ def main4_evaluateModels():
 #             (bot.PlayerOneShotAI_new,
 #             dict(mlpRgrArgs={'hidden_layer_sizes':(30, 20, 15)})),
              bot.PlayerOneShotHero,
-             (bot.PlayerOneShotAI_new, {}),
-             
+#             (bot.PlayerOneShotAI_new, {}),
+             (bot.PlayerOneShotAI_v2, {}),
 #            bot.PlayerAI_1SEnc_1,
 #            bot.PlayerAI_1SEnc_2,
 #            bot.PlayerAI_1SEnc_3,
@@ -144,6 +145,6 @@ if __name__== "__main__":
     np.random.seed(0)
 #    main1_playARandomGame()
     main2_simpleBenchmark()
-#    main3_initLearningPlayer()
-    main4_evaluateModels()
+    main3_initLearningPlayer()
+#    main4_evaluateModels()
     

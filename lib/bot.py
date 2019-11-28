@@ -1364,7 +1364,7 @@ class PlayerOneShotAI_v2(AbstractPlayer):
     name = 'AI 1S scrRgr'
     def __init__(
             self, mlpRgrArgs={'hidden_layer_sizes':(20, 10)},
-            lenScrReplayMem=13*100, lenMiniBatch=3000, gamma=1):
+            lenScrReplayMem=13*10, lenMiniBatch=3000, gamma=1):
         """
         mlpRgrArgs : dict
             Arguments passed to MLPRegressor
@@ -1503,23 +1503,23 @@ class PlayerOneShotAI_v2(AbstractPlayer):
         for gg in range(nGames):
             game = Game()
             sbs = []
-            #initial training round
-            if self.nGames == 0:
-                for rr in range(13):
-                    sbs += [game.sb.copy()]  # only for every round
-                    for aa in range(3):
-                        act, paras = game.ask_action()
-                        if aa < 2:
-                            sb, dice, attempt = paras
-                            game.perf_action(act,
-                                             self.choose_roll(sb, dice, attempt))
-                        else:
-                            sb, dice = paras
-                            cat = np.random.choice(sb.open_cats())
-                            game.perf_action(act, cat)
-                sbs += [game.sb.copy()]
-                self.add_sbs_to_srm(sbs)
-                continue
+#            #initial training round
+#            if self.nGames == 0:
+#                for rr in range(13):
+#                    sbs += [game.sb.copy()]  # only for every round
+#                    for aa in range(3):
+#                        act, paras = game.ask_action()
+#                        if aa < 2:
+#                            sb, dice, attempt = paras
+#                            game.perf_action(act,
+#                                             self.choose_roll(sb, dice, attempt))
+#                        else:
+#                            sb, dice = paras
+#                            cat = np.random.choice(sb.open_cats())
+#                            game.perf_action(act, cat)
+#                sbs += [game.sb.copy()]
+#                self.add_sbs_to_srm(sbs)
+#                continue
                             
                         
             for rr in range(13):
@@ -1532,7 +1532,7 @@ class PlayerOneShotAI_v2(AbstractPlayer):
                                          self.choose_roll(sb, dice, attempt))
                     else:
                         sb, dice = paras
-                        if np.random.rand() < pRand:
+                        if self.nGames == 0 or np.random.rand() < pRand:
                             cat = np.random.choice(sb.open_cats())            
                         elif pRat is None:
                             cat = self.choose_cat(sb, dice)
@@ -1575,21 +1575,30 @@ class PlayerOneShotAI_v2(AbstractPlayer):
                     X[nn, :] = self.encode_scrRgr_x(sb1).reshape(1,-1)
                     y[nn] = reward
 #                self.scrRgr = self.scrRgr.fit(X, y)
+#                lp(0)
                 with warnings.catch_warnings():
                     warnings.filterwarnings("ignore", category=ConvergenceWarning)
                     self.scrRgr = self.scrRgr.fit(X, y)
                 
             else:
-                assert False
+#                lp('>0')
+#                assert False
                 #partial fit by miniBatch
                 n_samples = self.lenMiniBatch
                 X = np.empty(shape=(n_samples, self.n_features))
                 y = np.empty(shape=(n_samples,))
                 for nn in range(n_samples):
                     ind = np.random.choice(list(range(len(self.srm))))
-                    xy = self.srm[ind]
-                    X[nn, :] = xy[0]
-                    y[nn] = xy[1]
+                    sb1, dirRew, sb2 = self.srm[ind]
+                    X[nn, :] = self.encode_scrRgr_x(sb1).reshape(1,-1)
+                    xSb2 = self.encode_scrRgr_x(sb2).reshape(1,-1)
+                    futRew = self.scrRgr.predict(xSb2)[0]
+#                     x = self.encode_scrRgr_x(tmpSB).reshape(1, -1)
+#                     futureReward = self.scrRgr.predict(x)[0]
+                    y[nn] = dirRew + self.gamma * futRew
+#                    xy = self.srm[ind]
+#                    X[nn, :] = xy[0]
+#                    y[nn] = xy[1]
                 self.scrRgr = self.scrRgr.partial_fit(X, y)
 
 #            for nn in range(n_samples):
