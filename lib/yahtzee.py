@@ -47,8 +47,16 @@ class Dice:
         assert len(arr) == 5
 #        lp(self.vals)
 #        lp(arr)
-        newVals = np.random.randint(1, 7, np.sum(arr))
-        self.vals[arr] = newVals
+        newVals = np.random.randint(1, 7, 5)
+#        lp(newVals)
+#        lp(arr)
+#        lp(self.vals)
+#        lp(self.vals[arr])
+        self.vals = np.where(arr, newVals, self.vals)
+#        if np.sum(arr) >= 3:
+#        lp(self.vals)
+#            assert False
+#        self.vals[arr] = newVals
         self.vals = np.sort(self.vals)
 #        lp(self.vals)
     
