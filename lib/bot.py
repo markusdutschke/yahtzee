@@ -22,6 +22,7 @@ from progressbar import progressbar
 import warnings
 from sklearn.exceptions import ConvergenceWarning
 from itertools import product
+import pickle
 
 
 #def benchmark(player, nGames=100):
@@ -2020,3 +2021,14 @@ class PlayerAI_full_v0(AbstractPlayer):
                 self.rrRgr = self.rrRgr.partial_fit(X, y)
 
             self.nGames += 1
+    
+    def save(self, filename):
+        """Store this instance as pickle"""
+        pickle.dump(self, open(filename, "wb" ) )
+    
+    # https://stackoverflow.com/a/37658673
+    def load(self, filename):
+#        newObj = func(self)
+#        self.__dict__.update(newObj.__dict__)
+        player = pickle.load(open(filename, "rb"))
+        self.__dict__.update(player.__dict__)

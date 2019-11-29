@@ -84,11 +84,11 @@ def main3_initLearningPlayer():
             bot.PlayerAI_full_v0(),
                ]
     
-    nGames = [1, 1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3]#, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
+    nGames = [1, 1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5]
 #    nGames = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
 #    nGames = np.arange(1,200,5)
 #    nGames = np.arange(1,200,1)
-#    nGames = [1, 5, 10, 15, 20]
+    nGames = [1, 5, 10, 15, 20]
     for nT in nGames:
         nT = int(nT)
 
@@ -154,12 +154,44 @@ def main4_evaluateModels():
 #        print(df)
 
 
-
+def main5_trainFullAIPlayer():
+    print('Training Intelligent Player:')
+    player = bot.PlayerAI_full_v0()
+    
+    playerFn = (
+            lambda it: './trainedBots/{:}-nGame{:d}.pick'
+            .format(player.name, it))
+    
+    try:
+        player.load(playerFn(0))  # 0: OFF
+    except FileNotFoundError:
+        print('No player model saved. Starting Training from zero ...')
+    else:
+        print('Loaded player from file:', playerFn(5))
+        m, s = player.benchmark(seed=None)
+        name = player.name + ' ('+str(player.nGames) + ' games)'
+        lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
+    
+    
+    nGames = list(range(0,50000,100))
+#    nGames = [1, 5, 10, 15, 20]
+    
+    for nT in nGames:
+        nT = int(nT)
+        if nT<=player.nGames:
+            continue
+        player.train(nGames=nT-player.nGames)
+        m, s = player.benchmark(seed=None)
+        name = player.name + ' ('+str(player.nGames) + ' games)'
+        lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
+        
+        player.save(playerFn(player.nGames))
 
 if __name__== "__main__":
     np.random.seed(0)
 #    main1_playARandomGame()
-    main2_simpleBenchmark()
-    main3_initLearningPlayer()
+#    main2_simpleBenchmark()
+#    main3_initLearningPlayer()
 #    main4_evaluateModels()
+    main5_trainFullAIPlayer()
     
