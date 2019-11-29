@@ -14,6 +14,9 @@ def weighted_choice(items, weights):
     assert len(items) == len(weights)
     wSum = np.sum(weights)
     ws = [w/wSum for w in weights]
-#    ws[-1] = 1- np.sum(ws[:-1])
-#    lp(items, ws)
     return np.random.choice(items, p=ws)
+
+
+#https://stackoverflow.com/a/23979509
+def arreq_in_list(myarr, list_arrays):
+    return next((True for elem in list_arrays if np.array_equal(elem, myarr)), False)

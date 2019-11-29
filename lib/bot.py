@@ -15,7 +15,7 @@ from yahtzee import Game, ScoreBoard, Dice
 from sklearn.neural_network import MLPRegressor
 from sklearn.utils.validation import check_is_fitted
 from comfct.list import list_cast
-from comfct.numpy import weighted_choice
+from comfct.numpy import weighted_choice, arreq_in_list
 #from tqdm import tqdm
 from progressbar import progressbar
 #from progress.bar import Bar
@@ -1764,7 +1764,15 @@ class PlayerAI_full_v0(AbstractPlayer):
     
     def eval_options_reroll(self, sb, dice, att):
         opts = []
+        keepDices = []
         for reroll in product([True, False], repeat=5):
+            # avoid unnecessary rerolls ([1, 2r, 2, 3, 4] and [1, 2, 2r, 3, 4])
+            keepDice = dice.vals[np.logical_not(reroll)]
+#            if keepDice in keepDices:
+            if arreq_in_list(keepDice, keepDices):
+                continue
+            else:
+                keepDices += [keepDice]
 #            lp(reroll)
             x = self.encode_rrRgr_x(sb, att, dice, reroll).reshape(1, -1)
             reward = self.rrRgr.predict(x)[0]

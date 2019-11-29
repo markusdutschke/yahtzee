@@ -11,8 +11,11 @@ import numpy as np
 a= [ np.array([1,2]), [4,3], [6,1], [4,2]]
 print(a)
 
-b = np.random.choice(a)
-print(b)
+el=np.array([1,2])
+print(el in a)
+
+#b = np.random.choice(a)
+#print(b)
 
 ##print(np.sort(a, axis=0))
 #print( sorted(a, key=lambda x: x[0]))
