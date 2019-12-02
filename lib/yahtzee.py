@@ -158,9 +158,9 @@ class ScoreBoard:
             score=np.sum(dice)
         else:
             assert False, 'invalid category position, cat='+str(cat)
-        us = self.getUpperSum()
-        if us < 63 and us + score >= 63:
-            score += 35
+#        us = self.getUpperSum()
+#        if us < 63 and us + score >= 63:
+#            score += 35
         return score
     
     def check_points_max(self, cat):
@@ -216,16 +216,20 @@ class ScoreBoard:
         uSum=np.sum(self.scores[:6])
         if np.ma.is_masked(uSum):
             uSum=0
-        if uSum>=63:
-            uSum+=35
-        return uSum
+        
     def getLowerSum(self):
         lSum=np.sum(self.scores[6:])
         if np.ma.is_masked(lSum):
             lSum=0
         return lSum
     def getSum(self):
-        return self.getUpperSum()+self.getLowerSum()
+        uSum = self.getUpperSum()
+        lSum = self.getLowerSum()
+        bonus = 0
+        if uSum >= 63:
+            bonus += 35
+
+        return uSum + bonus + lSum
     
 #    def print(self):
 #        print('='*10 + ' Score Board: ' + '='*10)

@@ -1740,6 +1740,9 @@ class PlayerAI_full_v0(AbstractPlayer):
             lp(scoreBoard, dice)
         for cat in scoreBoard.open_cats():
             directReward = scoreBoard.check_points(dice, cat)
+            uSum = scoreBoard.getUpperSum()
+            if cat <= 5 and uSum < 63 and uSum + directReward >= 63:
+                directReward += 35
 #            score = self.cat_predict(scoreBoard, dice, cat)
 #            assert len(score)==1
 #            score = score[0]
@@ -1787,13 +1790,14 @@ class PlayerAI_full_v0(AbstractPlayer):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 13
+        return 13 + 1
     def encode_scrRgr_x(self, scoreBoard):
         """Encodes a scoreboard to a numpy array,
         which is used as the scrRgr input layer
         """
         x = np.zeros(shape=(self.nFeat_scrRgr))
         x[:13] = scoreBoard.mask.astype(int)
+        x[13] = scoreBoard.getUpperSum() / 63
         # todo: later add here upper sum for bonus consideration
 #        lp('todo check encoding')
 #        lp(scoreBoard)

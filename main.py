@@ -163,7 +163,7 @@ def main5_trainFullAIPlayer():
             .format(player.name, it))
     
     try:
-        player.load(playerFn(8500))  # 0: OFF
+        player.load(playerFn(0))  # 0: OFF
     except FileNotFoundError:
         print('No player model saved. Starting Training from zero ...')
     else:
