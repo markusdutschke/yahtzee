@@ -1805,10 +1805,14 @@ class PlayerAI_full_v0(AbstractPlayer):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 13 + 1 + 6 
+        return 13 + 1 + 6 + 1
     def encode_rrRgr_x(self, scoreBoard, attempt, dice, reroll):
         """Encodes a scoreboard to a numpy array,
         which is used as the scrRgr input layer
+        13: cat available
+        1: attempt
+        6: fixed dice histogram
+        1: upper sum score board for bonus
         """
         x = np.zeros(shape=(self.nFeat_rrRgr))
         x[:13] = scoreBoard.mask.astype(int)
@@ -1817,6 +1821,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         #how many dice are kept in categories 1-6
         keepDice = dice.vals[np.logical_not(reroll)]
         x[14:20] = np.histogram(keepDice, bins=np.linspace(.5,6.5,7))[0]
+        x[20] = scoreBoard.getUpperSum()
         return x
     
     def add_to_scrRgrMem(self, sbs):
