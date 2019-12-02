@@ -1821,7 +1821,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         #how many dice are kept in categories 1-6
         keepDice = dice.vals[np.logical_not(reroll)]
         x[14:20] = np.histogram(keepDice, bins=np.linspace(.5,6.5,7))[0]
-        x[20] = scoreBoard.getUpperSum()
+        x[20] = scoreBoard.getUpperSum() / 63
         return x
     
     def add_to_scrRgrMem(self, sbs):
@@ -1862,7 +1862,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         """
         self.rrm = self.rrm[-self.lenRrReplayMem:]
     
-    def train(self, nGames, pRandCat=0, pRandRoll=.1, pRat=None):
+    def train(self, nGames, pRandCat=0, pRandRoll=0.01, pRat=100):
         """Training the Player with nGames and based on the trainers moves.
     
         Extended description of function.

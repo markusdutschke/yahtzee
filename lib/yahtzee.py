@@ -158,6 +158,9 @@ class ScoreBoard:
             score=np.sum(dice)
         else:
             assert False, 'invalid category position, cat='+str(cat)
+        us = self.getUpperSum()
+        if us < 63 and us + score >= 63:
+            score += 35
         return score
     
     def check_points_max(self, cat):
