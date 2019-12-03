@@ -1866,7 +1866,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         """
         self.rrm = self.rrm[-self.lenRrReplayMem:]
     
-    def train(self, nGames, pRandCat=0, pRandRoll=0.01, pRat=100):
+    def train(self, nGames, pRandCat=0, pRandRoll=0.01, pRatCat=None, pRatRr=100):
         """Training the Player with nGames and based on the trainers moves.
     
         Extended description of function.
@@ -1917,15 +1917,28 @@ class PlayerAI_full_v0(AbstractPlayer):
                         sb, dice, attempt = paras
                         if self.nGames == 0 or np.random.rand() < pRandRoll:
                             reroll = np.random.choice([True, False], size=5)
-                        else:
+                        elif pRatRr is None:
                             reroll = self.choose_reroll(sb, dice, attempt)
+                        else:
+                            opts = self.eval_options_reroll(sb, dice, attempt)
+                            cs = [opt[0] for opt in opts]
+                            ws = [opt[1] for opt in opts]
+                            ws = np.array(ws) - np.amin(ws)
+                            if np.amax(ws) > 0:
+                                alpha = np.log(pRatRr)/np.amax(ws)
+                                ws = np.exp(alpha*ws)
+#                                lp(cs)
+#                                lp(ws)
+                                reroll = weighted_choice(cs, ws)
+                            else:
+                                reroll = opts[0][0]
                         roundRr += [reroll]
                         game.perf_action(act, reroll)
                     else:
                         sb, dice = paras
                         if self.nGames == 0 or np.random.rand() < pRandCat:
                             cat = np.random.choice(sb.open_cats())            
-                        elif pRat is None:
+                        elif pRatCat is None:
                             cat = self.choose_cat(sb, dice)
                         else:
                             opts = self.eval_options_cat(sb, dice)
@@ -1938,7 +1951,7 @@ class PlayerAI_full_v0(AbstractPlayer):
                             ws = [opt[1] for opt in opts]
                             ws = np.array(ws) - np.amin(ws)
                             if np.amax(ws) > 0:
-                                alpha = np.log(pRat)/np.amax(ws)
+                                alpha = np.log(pRatCat)/np.amax(ws)
                                 ws = np.exp(alpha*ws)
                                 cat = weighted_choice(cs, ws)
                             else:
