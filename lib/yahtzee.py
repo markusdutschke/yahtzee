@@ -214,14 +214,16 @@ class ScoreBoard:
 
     def getUpperSum(self):
         uSum=np.sum(self.scores[:6])
-        if np.ma.is_masked(uSum):
+        if np.ma.is_masked(uSum):  # all entries masked
             uSum=0
+        return uSum
         
     def getLowerSum(self):
         lSum=np.sum(self.scores[6:])
-        if np.ma.is_masked(lSum):
+        if np.ma.is_masked(lSum):  # all entries masked
             lSum=0
         return lSum
+    
     def getSum(self):
         uSum = self.getUpperSum()
         lSum = self.getLowerSum()
