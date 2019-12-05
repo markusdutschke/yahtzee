@@ -162,12 +162,13 @@ def main5_trainFullAIPlayer():
             lambda it: './trainedBots/{:}-nGame{:d}.pick'
             .format(player.name, it))
     
+    loadIter = 18000  # 0: OFF
     try:
-        player.load(playerFn(0))  # 0: OFF
+        player.load(playerFn(loadIter))
     except FileNotFoundError:
         print('No player model saved. Starting Training from zero ...')
     else:
-        print('Loaded player from file:', playerFn(5))
+        print('Loaded player from file:', playerFn(loadIter))
         m, s = player.benchmark(seed=None)
         name = player.name + ' ('+str(player.nGames) + ' games)'
         lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))

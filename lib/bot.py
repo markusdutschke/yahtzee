@@ -1809,7 +1809,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 13 + 1 + 6 + 1
+        return 13 + 1 + 6 + 1 + 5
     def encode_rrRgr_x(self, scoreBoard, attempt, dice, reroll):
         """Encodes a scoreboard to a numpy array,
         which is used as the scrRgr input layer
@@ -1817,6 +1817,11 @@ class PlayerAI_full_v0(AbstractPlayer):
         1: attempt
         6: fixed dice histogram
         1: upper sum score board for bonus
+        5 helper quantities
+        - 1: sum of dice
+        - 1: small straight
+        - 1: large straight
+        - 2: full house (number of double, number of tripple)
         """
         x = np.zeros(shape=(self.nFeat_rrRgr))
         x[:13] = scoreBoard.mask.astype(int)
@@ -1824,8 +1829,21 @@ class PlayerAI_full_v0(AbstractPlayer):
         x[13] = attempt
         #how many dice are kept in categories 1-6
         keepDice = dice.vals[np.logical_not(reroll)]
-        x[14:20] = np.histogram(keepDice, bins=np.linspace(.5,6.5,7))[0]
+        hist = np.histogram(keepDice, bins=np.linspace(.5,6.5,7))[0]
+        x[14:20] = hist * np.array([1,2,3,4,5,6])
         x[20] = scoreBoard.getUpperSum() / 63
+        x[21] = np.sum(keepDice)
+        
+        #elements for small straight
+        for ii in range(3):
+            x[22] = max(x[22], np.sum(hist[ii:ii+4]>0))
+        #elements for large straight
+        for ii in range(2):
+            x[23] = max(x[23], np.sum(hist[ii:ii+5]>0))
+        # number of doubles
+        x[24] = len(hist[hist==2])
+        # number of tripples
+        x[25] = len(hist[hist==3])
         return x
     
     def add_to_scrRgrMem(self, sbs):
@@ -1866,7 +1884,8 @@ class PlayerAI_full_v0(AbstractPlayer):
         """
         self.rrm = self.rrm[-self.lenRrReplayMem:]
     
-    def train(self, nGames, pRandCat=0, pRandRoll=0.01, pRatCat=None, pRatRr=100):
+    def train(self, nGames, pRandCat=0, pRatCat=None,
+              pOptRr=.1, pRandRr=0.01, pRatRr=10):
         """Training the Player with nGames and based on the trainers moves.
     
         Extended description of function.
@@ -1901,6 +1920,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         >>> [x + 3 for x in a]
         [4, 5, 6]
         """
+        assert 0 <= pOptRr + pRandRr <= 1
         for gg in range(nGames):
             game = Game()
             sbs = []
@@ -1915,9 +1935,10 @@ class PlayerAI_full_v0(AbstractPlayer):
                     roundRr += [paras[1]]
                     if aa < 2:
                         sb, dice, attempt = paras
-                        if self.nGames == 0 or np.random.rand() < pRandRoll:
+                        rndFlt = np.random.rand()
+                        if self.nGames == 0 or rndFlt < pRandRr:
                             reroll = np.random.choice([True, False], size=5)
-                        elif pRatRr is None:
+                        elif pRatRr is None or rndFlt < pRandRr+pOptRr:
                             reroll = self.choose_reroll(sb, dice, attempt)
                         else:
                             opts = self.eval_options_reroll(sb, dice, attempt)
@@ -1927,11 +1948,14 @@ class PlayerAI_full_v0(AbstractPlayer):
                             if np.amax(ws) > 0:
                                 alpha = np.log(pRatRr)/np.amax(ws)
                                 ws = np.exp(alpha*ws)
+                                assert np.amin(ws) == 1
 #                                lp(cs)
 #                                lp(ws)
                                 reroll = weighted_choice(cs, ws)
                             else:
-                                reroll = opts[0][0]
+#                                reroll = opts[0][0]
+                                # all reroll options are weighted equal
+                                reroll = np.random.choice([True, False], size=5)
                         roundRr += [reroll]
                         game.perf_action(act, reroll)
                     else:
