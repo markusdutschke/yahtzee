@@ -1954,14 +1954,14 @@ class PlayerAI_full_v0(AbstractPlayer):
                                 reroll = weighted_choice(cs, ws)
                             else:
 #                                reroll = opts[0][0]
-                                # all reroll options are weighted equal
+                                # all options are weighted equal
                                 reroll = np.random.choice([True, False], size=5)
                         roundRr += [reroll]
                         game.perf_action(act, reroll)
                     else:
                         sb, dice = paras
                         if self.nGames == 0 or np.random.rand() < pRandCat:
-                            cat = np.random.choice(sb.open_cats())            
+                            cat = np.random.choice(sb.open_cats())
                         elif pRatCat is None:
                             cat = self.choose_cat(sb, dice)
                         else:
@@ -1979,7 +1979,9 @@ class PlayerAI_full_v0(AbstractPlayer):
                                 ws = np.exp(alpha*ws)
                                 cat = weighted_choice(cs, ws)
                             else:
-                                cat = opts[0][0]
+#                                cat = opts[0][0]
+                                # all options are weighted equal
+                                cat = np.random.choice(sb.open_cats())
                         game.perf_action(act, cat)
                 rrs += [roundRr]
 #                    lp(rr, aa, len(sbs))
