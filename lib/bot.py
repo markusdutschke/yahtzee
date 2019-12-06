@@ -1809,7 +1809,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 13 + 1 + 6 + 1 + 5
+        return 13 + 1 + 6 + 1 + 7
     def encode_rrRgr_x(self, scoreBoard, attempt, dice, reroll):
         """Encodes a scoreboard to a numpy array,
         which is used as the scrRgr input layer
@@ -1817,33 +1817,67 @@ class PlayerAI_full_v0(AbstractPlayer):
         1: attempt
         6: fixed dice histogram
         1: upper sum score board for bonus
-        5 helper quantities
+        7 helper quantities
         - 1: sum of dice
         - 1: small straight
         - 1: large straight
-        - 2: full house (number of double, number of tripple)
+        - 4: number of double, number of tripple, ...
         """
+        keepDice = dice.vals[np.logical_not(reroll)]
         x = np.zeros(shape=(self.nFeat_rrRgr))
-        x[:13] = scoreBoard.mask.astype(int)
-        # todo: later add here upper sum for bonus consideration
+#        x[:13] = scoreBoard.mask.astype(int)
+        x[:13] = -1
+        for cc in scoreBoard.open_cats():
+            x[cc] = scoreBoard.check_points(keepDice, cc)
+
         x[13] = attempt
         #how many dice are kept in categories 1-6
-        keepDice = dice.vals[np.logical_not(reroll)]
+        
         hist = np.histogram(keepDice, bins=np.linspace(.5,6.5,7))[0]
-        x[14:20] = hist * np.array([1,2,3,4,5,6])
-        x[20] = scoreBoard.getUpperSum() / 63
+#        x[14:20] = hist * np.array([1,2,3,4,5,6])
+        for cc in scoreBoard.open_cats():
+            x[14+cc] = hist[cc] * (cc+1)
+        
+        # Simplified Bonus indicator
+#        x[20] = scoreBoard.getUpperSum() / 63
+        upSum = scoreBoard.getUpperSum()
+        if upSum >= 63 or np.sum(scoreBoard.mask[:6])==0:
+#            x[20] = (5*(2+3+4+5+6) - 63) / 5  # max posible values
+            x[20] = -63/5  # min possible value
+        else:
+            # nbp: needed bonus progress (i.e. 3 in each cat)
+            nbp = np.sum(
+                    np.logical_not(scoreBoard.mask[:6]).astype(int)
+                    * np.array(range(1,7)) * 3)
+            mrbp = (63 - nbp) / 3 * 5  # max reachable bonus points
+            x[20] = (upSum - nbp) / mrbp
+#            lp(scoreBoard.scores[:6])
+#            lp(nbp, scoreBoard.getUpperSum(), x[20])
+        # prevent impossible bonus attempts
+        if x[20] < -1:
+            x[20] = -63/5
+
+
+        
+        # Helper for 3/4 of a kind and chance
         x[21] = np.sum(keepDice)
         
         #elements for small straight
-        for ii in range(3):
-            x[22] = max(x[22], np.sum(hist[ii:ii+4]>0))
+        if x[9] == 1:
+            for ii in range(3):
+                x[22] = max(x[22], np.sum(hist[ii:ii+4]>0))
         #elements for large straight
-        for ii in range(2):
-            x[23] = max(x[23], np.sum(hist[ii:ii+5]>0))
-        # number of doubles
-        x[24] = len(hist[hist==2])
-        # number of tripples
-        x[25] = len(hist[hist==3])
+        if x[10] == 1:
+            for ii in range(2):
+                x[23] = max(x[23], np.sum(hist[ii:ii+5]>0))
+#        #elements for full house
+#        if x[8] == 1:
+        # doble, tripple ,...
+        x[24] = len(hist[hist==2]) # number of doubles
+        x[25] = len(hist[hist==3]) # number of tripples
+        x[26] = len(hist[hist==4])
+        x[27] = len(hist[hist==5])
+        
         return x
     
     def add_to_scrRgrMem(self, sbs):

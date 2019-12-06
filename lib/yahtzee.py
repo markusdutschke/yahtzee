@@ -495,6 +495,12 @@ class Game:
         for ii in range(13):
             if ii == 6:
                 _str += ('-'*(2*n+13) +'\n')
+                upperSum = self.sb.getUpperSum()
+                _str += '{:16}: {:5} |\n'.format(
+                        'Upper Sum', str(upperSum))
+                _str += '{:16}: {:5} |\n'.format(
+                        'Bonus', '35' if upperSum >= 63 else '--')
+                _str += ('-'*(2*n+13) +'\n')
             score = str(self.sb.scores[ii])
             line = '{:16}: {:5} | {:>5} - '.format(ScoreBoard.cats[ii], score,
                     str(dfLog.loc[ii, 'round']))

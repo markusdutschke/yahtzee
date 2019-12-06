@@ -162,7 +162,7 @@ def main5_trainFullAIPlayer():
             lambda it: './trainedBots/{:}-nGame{:d}.pick'
             .format(player.name, it))
     
-    loadIter = 18000  # 0: OFF
+    loadIter = 0  # 0: OFF
     try:
         player.load(playerFn(loadIter))
     except FileNotFoundError:
@@ -188,11 +188,35 @@ def main5_trainFullAIPlayer():
         
         player.save(playerFn(player.nGames))
 
+
+def main6_playAGame():
+    print('Check out some games:')
+    player = bot.PlayerAI_full_v0()
+    
+    playerFn = (
+            lambda it: './trainedBots/{:}-nGame{:d}.pick'
+            .format(player.name, it))
+    
+    loadIter = 2400  # 0: OFF
+    try:
+        player.load(playerFn(loadIter))
+    except FileNotFoundError:
+        print('No player model saved. Starting Training from zero ...')
+    else:
+        print('Loaded player from file:', playerFn(loadIter))
+    
+    for ii in range(3):
+        game = Game(player)
+        print(game)
+
+
 if __name__== "__main__":
     np.random.seed(0)
 #    main1_playARandomGame()
 #    main2_simpleBenchmark()
 #    main3_initLearningPlayer()
 #    main4_evaluateModels()
-    main5_trainFullAIPlayer()
+    
+#    main5_trainFullAIPlayer()
+    main6_playAGame()
     
