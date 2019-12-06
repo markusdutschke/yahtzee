@@ -1825,13 +1825,13 @@ class PlayerAI_full_v0(AbstractPlayer):
         """
         keepDice = dice.vals[np.logical_not(reroll)]
         x = np.zeros(shape=(self.nFeat_rrRgr))
-#        x[:13] = scoreBoard.mask.astype(int)
-        x[:13] = -1
-        for cc in scoreBoard.open_cats():
-            if len(keepDice) > 0:
-                x[cc] = scoreBoard.check_points(keepDice, cc)
-            else:
-                x[cc] = 0
+        x[:13] = scoreBoard.mask.astype(int)
+#        x[:13] = -1
+#        for cc in scoreBoard.open_cats():
+#            if len(keepDice) > 0:
+#                x[cc] = scoreBoard.check_points(keepDice, cc)
+#            else:
+#                x[cc] = 0
 
         x[13] = attempt
         #how many dice are kept in categories 1-6
