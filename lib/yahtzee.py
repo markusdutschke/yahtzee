@@ -120,7 +120,9 @@ class ScoreBoard:
         cat: int.
         """
 #        lp(dice, type(dice))
-        dice = dice.vals
+        if isinstance(dice, Dice):
+            dice = dice.vals
+        assert isinstance(dice, np.ndarray), str(dice) + '; ' + str(type(dice))
 #        assert self.scores.mask[cat], (
 #                'Mask must be True if dice should be assigned')
         score = 0

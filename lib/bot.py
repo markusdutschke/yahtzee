@@ -1828,7 +1828,10 @@ class PlayerAI_full_v0(AbstractPlayer):
 #        x[:13] = scoreBoard.mask.astype(int)
         x[:13] = -1
         for cc in scoreBoard.open_cats():
-            x[cc] = scoreBoard.check_points(keepDice, cc)
+            if len(keepDice) > 0:
+                x[cc] = scoreBoard.check_points(keepDice, cc)
+            else:
+                x[cc] = 0
 
         x[13] = attempt
         #how many dice are kept in categories 1-6
@@ -1836,6 +1839,8 @@ class PlayerAI_full_v0(AbstractPlayer):
         hist = np.histogram(keepDice, bins=np.linspace(.5,6.5,7))[0]
 #        x[14:20] = hist * np.array([1,2,3,4,5,6])
         for cc in scoreBoard.open_cats():
+            if cc >= 6:
+                break
             x[14+cc] = hist[cc] * (cc+1)
         
         # Simplified Bonus indicator
