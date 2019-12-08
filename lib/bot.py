@@ -1809,7 +1809,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 13 + 1 + 6 + 1 + 7
+        return 13 + 1 + 6 + 1 + 5
     def encode_rrRgr_x(self, scoreBoard, attempt, dice, reroll):
         """Encodes a scoreboard to a numpy array,
         which is used as the scrRgr input layer
@@ -1821,7 +1821,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         - 1: sum of dice
         - 1: small straight
         - 1: large straight
-        - 4: number of double, number of tripple, ...
+        - 2: number of double, number of tripple, ...
         """
         keepDice = dice.vals[np.logical_not(reroll)]
         x = np.zeros(shape=(self.nFeat_rrRgr))
@@ -1880,8 +1880,8 @@ class PlayerAI_full_v0(AbstractPlayer):
         # doble, tripple ,...
         x[24] = len(hist[hist==2]) # number of doubles
         x[25] = len(hist[hist==3]) # number of tripples
-        x[26] = len(hist[hist==4])
-        x[27] = len(hist[hist==5])
+#        x[26] = len(hist[hist==4])
+#        x[27] = len(hist[hist==5])
         
         return x
     
@@ -1959,6 +1959,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         >>> [x + 3 for x in a]
         [4, 5, 6]
         """
+        np.random.seed(self.nGames)
         assert 0 <= pOptRr + pRandRr <= 1
         for gg in range(nGames):
             game = Game()
