@@ -1844,23 +1844,23 @@ class PlayerAI_full_v0(AbstractPlayer):
 #            x[14+cc] = hist[cc] * (cc+1)
         
         # Simplified Bonus indicator
-#        x[20] = scoreBoard.getUpperSum() / 63
-        upSum = scoreBoard.getUpperSum()
-        if upSum >= 63 or np.sum(scoreBoard.mask[:6])==0:
-#            x[20] = (5*(2+3+4+5+6) - 63) / 5  # max posible values
-            x[20] = -63/5  # min possible value
-        else:
-            # nbp: needed bonus progress (i.e. 3 in each cat)
-            nbp = np.sum(
-                    np.logical_not(scoreBoard.mask[:6]).astype(int)
-                    * np.array(range(1,7)) * 3)
-            mrbp = (63 - nbp) / 3 * 5  # max reachable bonus points
-            x[20] = (upSum - nbp) / mrbp
-#            lp(scoreBoard.scores[:6])
-#            lp(nbp, scoreBoard.getUpperSum(), x[20])
-        # prevent impossible bonus attempts
-        if x[20] < -1:
-            x[20] = -63/5
+        x[20] = scoreBoard.getUpperSum() / 63
+#        upSum = scoreBoard.getUpperSum()
+#        if upSum >= 63 or np.sum(scoreBoard.mask[:6])==0:
+##            x[20] = (5*(2+3+4+5+6) - 63) / 5  # max posible values
+#            x[20] = -63/5  # min possible value
+#        else:
+#            # nbp: needed bonus progress (i.e. 3 in each cat)
+#            nbp = np.sum(
+#                    np.logical_not(scoreBoard.mask[:6]).astype(int)
+#                    * np.array(range(1,7)) * 3)
+#            mrbp = (63 - nbp) / 3 * 5  # max reachable bonus points
+#            x[20] = (upSum - nbp) / mrbp
+##            lp(scoreBoard.scores[:6])
+##            lp(nbp, scoreBoard.getUpperSum(), x[20])
+#        # prevent impossible bonus attempts
+#        if x[20] < -1:
+#            x[20] = -63/5
 
 
         
