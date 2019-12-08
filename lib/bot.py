@@ -1837,11 +1837,11 @@ class PlayerAI_full_v0(AbstractPlayer):
         #how many dice are kept in categories 1-6
         
         hist = np.histogram(keepDice, bins=np.linspace(.5,6.5,7))[0]
-#        x[14:20] = hist * np.array([1,2,3,4,5,6])
-        for cc in scoreBoard.open_cats():
-            if cc >= 6:
-                break
-            x[14+cc] = hist[cc] * (cc+1)
+        x[14:20] = hist * np.array([1,2,3,4,5,6])
+#        for cc in scoreBoard.open_cats():
+#            if cc >= 6:
+#                break
+#            x[14+cc] = hist[cc] * (cc+1)
         
         # Simplified Bonus indicator
 #        x[20] = scoreBoard.getUpperSum() / 63
@@ -1868,13 +1868,13 @@ class PlayerAI_full_v0(AbstractPlayer):
         x[21] = np.sum(keepDice)
         
         #elements for small straight
-        if x[9] == 1:
-            for ii in range(3):
-                x[22] = max(x[22], np.sum(hist[ii:ii+4]>0))
+#        if x[9] == 1:
+        for ii in range(3):
+            x[22] = max(x[22], np.sum(hist[ii:ii+4]>0))
         #elements for large straight
-        if x[10] == 1:
-            for ii in range(2):
-                x[23] = max(x[23], np.sum(hist[ii:ii+5]>0))
+#        if x[10] == 1:
+        for ii in range(2):
+            x[23] = max(x[23], np.sum(hist[ii:ii+5]>0))
 #        #elements for full house
 #        if x[8] == 1:
         # doble, tripple ,...
