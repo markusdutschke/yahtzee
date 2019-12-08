@@ -1959,9 +1959,10 @@ class PlayerAI_full_v0(AbstractPlayer):
         >>> [x + 3 for x in a]
         [4, 5, 6]
         """
-        np.random.seed(self.nGames)
+        
         assert 0 <= pOptRr + pRandRr <= 1
         for gg in range(nGames):
+            np.random.seed(self.nGames)
             game = Game()
             sbs = []
             rrs = []
