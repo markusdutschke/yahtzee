@@ -1936,6 +1936,11 @@ class PlayerAI_full_v0(AbstractPlayer):
         trainerEnsemble : PlayerEnsemble
             Integer represents the weight of the specici players moves
             player is someone doing decisions; None is self
+        pRandCat : 0 <= float <= 1
+            Probability for a random move (choose cat).
+            Equivalent to epsilon of eplison-greedy startegy.
+            Increase this factor in case of anti-learning (i.e. systematically
+            decreaings benchmarks to a bad decisions on purpose startegy)
         pRat : float
             predicted best action is pRat times as probable to choose as
             the predicted most unfavourable action.
