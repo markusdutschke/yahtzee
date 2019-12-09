@@ -1923,7 +1923,7 @@ class PlayerAI_full_v0(AbstractPlayer):
         """
         self.rrm = self.rrm[-self.lenRrReplayMem:]
     
-    def train(self, nGames, pRandCat=0, pRatCat=None,
+    def train(self, nGames, pRandCat=0.1, pRatCat=None,
               pOptRr=.3, pRandRr=0.1, pRatRr=10):
         """Training the Player with nGames and based on the trainers moves.
     
