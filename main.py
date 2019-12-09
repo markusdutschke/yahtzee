@@ -12,6 +12,10 @@ from comfct.debug import lp
 from yahtzee import Dice, ScoreBoard, Game
 from sklearn.neural_network import MLPRegressor
 import bot
+
+# Benchmark games should not overlap with training games
+BENCHMARK_SEED = 618225912
+
 #(PlayerEnsemble,
 #        PlayerRandomCrap, PlayerOneShotHero,
 #        PlayerOneShotAI, PlayerOneShortAISmartEnc
@@ -175,14 +179,14 @@ def main5_trainFullAIPlayer():
     
     
     nGames = list(range(0,50000,100))
-#    nGames = [1, 5, 10, 15, 20]
+    nGames = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100, 200, 500, 1000] + list(range(1000,1200,1))
     
     for nT in nGames:
         nT = int(nT)
         if nT<=player.nGames:
             continue
         player.train(nGames=nT-player.nGames)
-        m, s = player.benchmark(seed=None)
+        m, s = player.benchmark(seed=BENCHMARK_SEED)
         name = player.name + ' ('+str(player.nGames) + ' games)'
         lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
         
@@ -209,9 +213,59 @@ def main6_playAGame():
         game = Game(player)
         print(game)
 
+def demo():
+#    print('LETS FIRST HAVE A LOOK AT THE FINAL PERFORMANCE OF THIS CODE:')
+    print('='*80 + '\n' +
+          'Lets first have a look at the final performance of the trained AI:'
+          + '\n' + '='*80)
+    print()
+#    print('Benchmark: Classic Players')
+#    print('\t-no use of any machine learning')
+#    print('\t-no re-rolling of any dice.'
+#    print('\t The result is directly entered in a category on the score board')
+#    print('\tOne Shot Human is a collection of human \'strategies\' '
+#          'without re-rolling.')
+#    for player in [bot.PlayerRandomCrap(),
+#                   bot.PlayerOneShotHero(),
+#                   bot.Player1ShotHuman(),
+#                   ]:
+##        m, s = benchmark(player, nGames=100)
+#        m, s = player.benchmark(seed=0)
+#        print('\t{:50} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
+    print('A view benchmarks:')
+    print()
+    print('\t{:50} {:}'.format('Description', 'avg. Score'))
+    print('\t' + '-'*80)
+    print('\t{:50} {:.1f}'.format('Random actions:', 43))
+    print('\t{:50} {:.1f}'.format('Greedy strategy without re-rolls:', 111))
+    print('\t{:50} {:.1f}'.format('Experiences Human Player (TARGET):', 250))
+    print()
+    
+    print('Benchmark: AI-Players')
+    lstPlayers = []
+    lstPlayers += [
+            bot.PlayerAI_full_v0(
+                    fn='./trainedBots/PlayerAI_full_v0-nGame1100.pick'),
+                    ]
+    for player in lstPlayers:
+        m, s = player.benchmark(seed=BENCHMARK_SEED)
+        print('\t{:50} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
+    
+    print()
+    print()
+    print('='*80 + '\n' +
+          'Okay, lets check out a few games of this fancy AI!'
+          + '\n' + '='*80)
+    print()
+    
+    for ii in range(3):
+        game = Game(lstPlayers[0])
+        print(game)
 
 if __name__== "__main__":
     np.random.seed(0)
+#    demo()
+    
 #    main1_playARandomGame()
 #    main2_simpleBenchmark()
 #    main3_initLearningPlayer()

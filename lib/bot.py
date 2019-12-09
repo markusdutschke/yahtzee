@@ -268,7 +268,7 @@ class AbstractPlayer(ABC):  # abstract class
 #        lp(scores)
         scores = [np.mean(chunk) for chunk in np.array_split(scores, nBins)]
 #        lp(scores)
-        return np.mean(scores), np.std(scores)/len(scores)**.5
+        return np.mean(scores), np.std(scores) #/len(scores)**.5
     
     @classmethod
     def modelBenchmark(cls, nGames=range(1,2), nInstances=50, *args, **kwargs):
@@ -322,9 +322,9 @@ class PlayerOneShotHero(AbstractPlayer):
         bench = sorted(bench, key=lambda x: x[0])
         return bench[-1][1]
 
-class Player1ShotMarkus(AbstractPlayer):
+class Player1ShotHuman(AbstractPlayer):
     """This player assigns the dice to the category with the most scores"""
-    name = 'One Shot Markus'
+    name = 'One Shot Human'
     def choose_reroll(self, scoreBoard, dice, attempt):
         return [False]*5
     def choose_cat(self, scoreBoard, dice):
@@ -1692,7 +1692,8 @@ class PlayerAI_full_v0(AbstractPlayer):
             rrRgrArgs={'hidden_layer_sizes':(40, 40, 40, 40, 40, 10)},
             lenRrReplayMem=26*100, lenRrMiniBatch=26*50,
             nIterPartFit=5,
-            gamma=1):
+            gamma=1,
+            fn=None):
         """
         mlpRgrArgs : dict
             Arguments passed to MLPRegressor
@@ -1717,6 +1718,9 @@ class PlayerAI_full_v0(AbstractPlayer):
         self.nIterPartFit = nIterPartFit
         self.gamma = gamma
         self.nGames = 0
+        
+        if fn is not None:
+            self.load(fn)
 #        lp(self.scrRgr.get_params())
 #        assert False
 #        lp('todo check gamma=0')
