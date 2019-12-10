@@ -7,7 +7,7 @@ to train and test an artificially intelligent player for the dice game yahtzee.
 ## Output
 
 
-
+```
 ================================================================================
 Lets first have a look at the final performance of the trained AI:
 ================================================================================
@@ -127,7 +127,7 @@ The training + benchmarks takes a about 80 minutes
         500                  172.2 +/- 13.0
         1000                 196.6 +/- 13.4
         1053                 200.1 +/- 18.7
-
+```
 
 
 
