@@ -163,7 +163,7 @@ def main5_trainFullAIPlayer():
     player = bot.PlayerAI_full_v0()
     
     playerFn = (
-            lambda it: './trainedBots/{:}-nGame{:d}.pick'
+            lambda it: './tmp/{:}-nGame{:d}.pick'
             .format(player.name, it))
     
     loadIter = 0  # 0: OFF
@@ -179,7 +179,7 @@ def main5_trainFullAIPlayer():
     
     
     nGames = list(range(0,50000,100))
-    nGames = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100, 200, 500] + list(range(900,1400,1))
+    nGames = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100, 200, 500, 1000, 1053] # + list(range(900,1400,1))
     
     for nT in nGames:
         nT = int(nT)
@@ -216,24 +216,10 @@ def main6_playAGame():
         print(game)
 
 def demo():
-#    print('LETS FIRST HAVE A LOOK AT THE FINAL PERFORMANCE OF THIS CODE:')
     print('='*80 + '\n' +
           'Lets first have a look at the final performance of the trained AI:'
           + '\n' + '='*80)
     print()
-#    print('Benchmark: Classic Players')
-#    print('\t-no use of any machine learning')
-#    print('\t-no re-rolling of any dice.'
-#    print('\t The result is directly entered in a category on the score board')
-#    print('\tOne Shot Human is a collection of human \'strategies\' '
-#          'without re-rolling.')
-#    for player in [bot.PlayerRandomCrap(),
-#                   bot.PlayerOneShotHero(),
-#                   bot.Player1ShotHuman(),
-#                   ]:
-##        m, s = benchmark(player, nGames=100)
-#        m, s = player.benchmark(seed=0)
-#        print('\t{:50} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
     print('A view benchmarks:')
     print()
     print('\t{:50} {:}'.format('Description', 'avg. Score'))
@@ -247,7 +233,7 @@ def demo():
     lstPlayers = []
     lstPlayers += [
             bot.PlayerAI_full_v0(
-                    fn='./trainedBots/PlayerAI_full_v0-nGame1100.pick'),
+                    fn='./trainedBots/PlayerAI_full_v0-nGame1053.pick'),
                     ]
     for player in lstPlayers:
         m, s = player.benchmark(seed=BENCHMARK_SEED)
@@ -255,24 +241,58 @@ def demo():
     
     print()
     print()
+    
+    
     print('='*80 + '\n' +
-          'Okay, lets check out a few games of this fancy AI!'
+          'Okay, lets check out a few games of the best AI Player!'
           + '\n' + '='*80)
     print()
-    
+    player = lstPlayers[-1]
     for ii in range(3):
-        game = Game(lstPlayers[0])
+        game = Game(player)
         print(game)
+    print()
+    print()
+    
+    
+    print('='*80 + '\n' +
+          'Now we see how such a cool AI player is trained ...'
+          + '\n' + '='*80)
+    print()
+    print('The training + benchmarks takes a about 80 minutes')
+    player = bot.PlayerAI_full_v0()
+    nGames = (
+            [1, 2, 3, 4]
+            + [10, 20, 30, 40, 50, 60, 70, 80, 90]
+            + [100, 200, 500, 1000, 1053]
+            )
+    print()
+    print('\t{:20} {:}'.format('# Trainings', 'Score'))
+    for nT in nGames:
+        nT = int(nT)
+        if nT<=player.nGames:
+            continue
+        player.train(nGames=nT-player.nGames)
+        m, s = player.benchmark(seed=BENCHMARK_SEED)
+#        name = player.name + ' ('+str(player.nGames) + ' games)'
+#        lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
+        print('\t{:20} {:.1f} +/- {:.1f}'.format(str(player.nGames), m, s))
+    player.save('./trainedBots/PlayerAI_full_v0-nGame1053-2.pick')
+        
+#        player.save(playerFn(player.nGames))
+#        
+#        assert m < 200, 'Found nice result'
+    
 
 if __name__== "__main__":
     np.random.seed(0)
-#    demo()
+    demo()
     
 #    main1_playARandomGame()
 #    main2_simpleBenchmark()
 #    main3_initLearningPlayer()
 #    main4_evaluateModels()
     
-    main5_trainFullAIPlayer()
+#    main5_trainFullAIPlayer()
 #    main6_playAGame()
     
