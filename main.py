@@ -179,7 +179,7 @@ def main5_trainFullAIPlayer():
     
     
     nGames = list(range(0,50000,100))
-    nGames = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100, 200, 500, 1000] + list(range(1000,1200,1))
+    nGames = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100, 200, 500] + list(range(900,1400,1))
     
     for nT in nGames:
         nT = int(nT)
@@ -191,6 +191,8 @@ def main5_trainFullAIPlayer():
         lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
         
         player.save(playerFn(player.nGames))
+        
+        assert m < 200, 'Found nice result'
 
 
 def main6_playAGame():
