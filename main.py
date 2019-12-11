@@ -180,7 +180,7 @@ def main5_trainFullAIPlayer():
     
     nGames = list(range(0,10000,100))
     nGames = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100, 200, 500, 1000, 1053] # + list(range(900,1400,1))
-    
+#    nGames = list(range(0,100,10)) + list(range(100,10000,100))
     for nT in nGames:
         nT = int(nT)
         if nT<=player.nGames:
