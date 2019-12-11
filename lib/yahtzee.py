@@ -24,12 +24,12 @@ def roll_dice(nDice=5):
 
 class Dice:
     
-    def __init__(self, arr=None):
-        if arr is None:
+    def __init__(self, vals=None):
+        if vals is None:
             self.vals = np.sort(np.random.randint(1,7,5))
         else:
-            assert len(arr) == 5
-            self.vals = np.sort(arr)
+            assert len(vals) == 5
+            self.vals = np.sort(vals)
 #    # trivial iteration for lst = list(game) functionality
 #    # https://www.programiz.com/python-programming/iterator
 #    def __iter__(self):
@@ -42,22 +42,17 @@ class Dice:
 #        else:
 #            raise StopIteration
     
-    def roll(self, arr):
+    def roll(self, mask):
         """arr is a boolen array: True->reroll this dice"""
-        assert len(arr) == 5
+        assert len(mask) == 5, str(mask)
 #        lp(self.vals)
 #        lp(arr)
-        newVals = np.random.randint(1, 7, 5)
-#        lp(newVals)
-#        lp(arr)
-#        lp(self.vals)
-#        lp(self.vals[arr])
-        self.vals = np.where(arr, newVals, self.vals)
-#        if np.sum(arr) >= 3:
-#        lp(self.vals)
-#            assert False
-#        self.vals[arr] = newVals
-        self.vals = np.sort(self.vals)
+        randVals = np.random.randint(1, 7, 5)
+
+        newVals = np.where(mask, randVals, self.vals)
+
+        newVals = np.sort(newVals)
+        return Dice(newVals)
 #        lp(self.vals)
     
     def __str__(self):
@@ -265,6 +260,137 @@ class ScoreBoard:
 
 
 class Game:
+    """Stores a complete game"""
+    
+    def __init__(self, player):
+        """player: AbstracPlayer"""
+        self.log = pd.DataFrame(
+                columns=['scoreBoard',
+                         'dice0', 'deci0', 'info0',
+                         'dice1', 'deci1', 'info1',
+                         'dice2', 'deci2', 'info2'],
+                index=list(range(14)))
+        self.autoplay(player)
+
+    
+    def autoplay(self, player):
+        """Plays and stores a Yahtzee game.
+        
+        Returns
+        -------
+        None
+            Description of return value
+        
+        See Also
+        --------
+        otherfunc : some related other function
+        
+        Examples
+        --------
+        These are written in doctest format, and should illustrate how to
+        use the function.
+        
+        >>> a=[1,2,3]
+        >>> [x + 3 for x in a]
+        [4, 5, 6]
+        """
+        sb = ScoreBoard()
+        for cc in range(0,13):
+            prevSb = sb.copy()
+            
+            dice0 = Dice()
+#            lp(player.name)
+            deci0, info0 = player.choose_reroll(sb, dice0, 0)
+#            lp(deci0)
+#            lp(info0)
+#            lp(player.choose_reroll(sb, dice0, 0))
+#            lp(type(player.choose_reroll(sb, dice0, 0)))
+            dice1 = dice0.roll(deci0)
+            deci1, info1 = player.choose_reroll(sb, dice1, 1)
+            # choose cat
+            dice2 = dice1.roll(deci1)
+            deci2, info2 = player.choose_cat(sb, dice2)
+            sb.add(dice2, deci2)
+#            lp(self.log)
+            self.log.loc[cc, :] = [
+                    prevSb,
+                    dice0, deci0, info0, dice1, deci1, info1,
+                    dice2, deci2, info2]
+        self.log.loc[13, 'scoreBoard'] = sb
+
+#        self.finalScoreBoard = sb
+    
+
+        
+    def __str__(self, debugLevel=0):
+        _str = ''
+        # sort log by categories
+#        lp(self.log)
+#        dfLog = pd.DataFrame(
+#                self.log, columns=['scores',
+#                                   'dice0', 'deci0',
+#                                   'dice1', 'deci1',
+#                                   'dice2', 'deci2', 'info2'])
+        dfLog = self.log
+#        lp(dfLog)
+        dfLog.index.name ='round'
+        
+        if debugLevel >= 1:
+            for ii in range(13):
+                _str += (
+                        '--\n'
+                        + 'DICE: ' + str(dfLog.loc[ii,'dice2'])
+                        + ';\nEVAL: ' + str(dfLog.loc[ii,'info2'])
+                        + ';\nDECISION: ' + ScoreBoard.cats[dfLog.loc[ii,'deci2']]
+                        )
+                _str += '\n'
+        
+        dfLog = dfLog.reset_index()
+        dfLog =dfLog.set_index('deci2')
+        dfLog = dfLog.sort_index()
+        
+#        lp(dfLog['info2'])
+        
+        
+                
+
+        n = 36
+        _str += ('='*n + ' Score Board ' + '='*n +'\n')
+        _str += ('{:16}: {:5} | round - dice (r = reroll)\n'
+              .format('Category', 'Score'))
+        _str += ('-'*(2*n + 13) +'\n')
+        
+        for ii in range(13):
+            if ii == 6:
+                _str += ('-'*(2*n+13) +'\n')
+                upperSum = self.sb.getUpperSum()
+                _str += '{:16}: {:5} |\n'.format(
+                        'Upper Sum', str(upperSum))
+                _str += '{:16}: {:5} |\n'.format(
+                        'Bonus', '35' if upperSum >= 63 else '--')
+                _str += ('-'*(2*n+13) +'\n')
+            score = str(self.sb.scores[ii])
+            line = '{:16}: {:5} | {:>5} - '.format(ScoreBoard.cats[ii], score,
+                    str(dfLog.loc[ii, 'round']))
+            for rr in [0,1]:
+                dice = dfLog.loc[ii, 'dice' + str(rr)]
+                deci = dfLog.loc[ii, 'deci' + str(rr)]
+                line += '{:} -> '.format(dice.to_str(deci))
+            line += dfLog.loc[ii, 'dice2'].to_str()
+            _str += (line +'\n')
+        
+        _str += ('='*(2*n+13) +'\n')
+        _str += (' '*(n+0) + ' Score: {:5d}\n'.format(self.sb.getSum()))
+        _str += ('='*(2*n+13) +'\n')
+        return _str
+    
+    @property
+    def score(self):
+        return self.sb.getSum()
+
+
+
+class Game_depricated:
     """Stores a complete game"""
     
     def __init__(self, players=None):

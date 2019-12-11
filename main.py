@@ -178,8 +178,8 @@ def main5_trainFullAIPlayer():
         lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
     
     
-    nGames = list(range(0,50000,100))
-    nGames = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100, 200, 500, 1000, 1053] # + list(range(900,1400,1))
+    nGames = list(range(0,10000,100))
+#    nGames = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100, 200, 500, 1000, 1053] # + list(range(900,1400,1))
     
     for nT in nGames:
         nT = int(nT)
@@ -197,11 +197,11 @@ def main5_trainFullAIPlayer():
 
 def main6_playAGame():
     print('Check out some games:')
-    player = bot.PlayerAI_full_v0()
+    player = bot.PlayerAI_full_v0(fn='./trainedBots/PlayerAI_full_v0-nGame1053.pick')
     
-    playerFn = (
-            lambda it: './trainedBots/{:}-nGame{:d}.pick'
-            .format(player.name, it))
+#    playerFn = (
+#            lambda it: './trainedBots/{:}-nGame{:d}.pick'
+#            .format(player.name, it))
     
     loadIter = 2400  # 0: OFF
     try:
@@ -220,13 +220,15 @@ def demo():
           'Lets first have a look at the final performance of the trained AI:'
           + '\n' + '='*80)
     print()
-    print('A view benchmarks:')
+    print('A view benchmarks (check papers in README):')
     print()
     print('\t{:50} {:}'.format('Description', 'avg. Score'))
     print('\t' + '-'*80)
-    print('\t{:50} {:.1f}'.format('Random actions:', 43))
-    print('\t{:50} {:.1f}'.format('Greedy strategy without re-rolls:', 111))
-    print('\t{:50} {:.1f}'.format('Experiences Human Player (TARGET):', 250))
+    print('\t{:50} {:.1f}'.format('Random, no Bonus (Verhoff):', 45.95))
+    print('\t{:50} {:.1f}'.format('Greedy strategy, no re-rolls:', 111))
+    print('\t{:50} {:.1f}'.format('Greedy (Glenn06):', 218.05))
+    print('\t{:50} {:.1f}'.format('Greedy (Felldin):', 221.68))
+    print('\t{:50} {:.1f}'.format('Optimal Strategy (Holderied):', 245.9))
     print()
     
     print('Benchmark: AI-Players')
@@ -286,13 +288,13 @@ def demo():
 
 if __name__== "__main__":
     np.random.seed(0)
-    demo()
+#    demo()
     
 #    main1_playARandomGame()
 #    main2_simpleBenchmark()
 #    main3_initLearningPlayer()
 #    main4_evaluateModels()
     
-#    main5_trainFullAIPlayer()
-#    main6_playAGame()
+    main5_trainFullAIPlayer()
+    main6_playAGame()
     

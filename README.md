@@ -133,5 +133,17 @@ The training + benchmarks takes a about 80 minutes
 
 # Further material
 
-- probabilities for each combination
+## probabilities for some combination
 http://www.brefeld.homepage.t-online.de/kniffel.html (German)
+
+## simulator
+- http://yahtzee.holderied.de/
+- http://kniffel.holderied.de/ (German)
+
+
+## papers / codes
+- Holderied: http://holderied.de/kniffel/ (same rules)
+- Glenn06: http://gunpowder.cs.loyola.edu/~jglenn/research/optimal_yahtzee.pdf (other rules)
+- Jedenberg: https://www.diva-portal.org/smash/get/diva2:810580/FULLTEXT01.pdf (other rules)
+- Verhoff: http://www.yahtzee.org.uk/optimal_yahtzee_TV.pdf
+- Felldin: http://www.csc.kth.se/utbildning/kth/kurser/DD143X/dkand12/Group5Mikael/final/Markus_Felldin_and_Vinit_Sood.pdf (same rules)
