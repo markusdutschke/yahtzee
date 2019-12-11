@@ -155,10 +155,12 @@ class ScoreBoard:
             score=np.sum(dice)
         else:
             assert False, 'invalid category position, cat='+str(cat)
-#        us = self.getUpperSum()
-#        if us < 63 and us + score >= 63:
-#            score += 35
-        return score
+        
+        bonus = 0
+        us = self.getUpperSum()
+        if us < 63 and cat < 6 and us + score >= 63:
+            bonus = 35
+        return score, bonus
     
     def check_points_max(self, cat):
         maxPnts = {0: 5,
@@ -187,7 +189,7 @@ class ScoreBoard:
         , str(self.scores)+ '\n'+str(self.open_cats_mask()) \
         +'\nposCat='+str(cat)+'\ntry to add to used category!'
 #        dice = dice.vals
-        self.scores[cat] = self.check_points(dice, cat)
+        self.scores[cat], bonus = self.check_points(dice, cat)
 #        assert isinstance(diceInt,int)
         #convert dice to np.ndarray of len 5
 #        dice=np.empty(shape=5,dtype=int)
