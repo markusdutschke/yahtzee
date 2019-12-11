@@ -20,7 +20,7 @@ from comfct.numpy import weighted_choice, arreq_in_list
 from progressbar import progressbar
 #from progress.bar import Bar
 import warnings
-from sklearn.exceptions import ConvergenceWarning
+from sklearn.exceptions import ConvergenceWarning, NotFittedError
 from itertools import product
 import pickle
 
@@ -2021,16 +2021,18 @@ class PlayerAI_full_v1(AbstractPlayer):
     def eval_options_cat(self, scoreBoard, dice, debug=0):
         """Return a sorted list with the options to choose for cat and
         the expected restScore.
+        returns: [(cat, score), (cat, score), ...]
         """
         opts = []
         if debug==1:
             lp('todo: check reward', self.gamma)
             lp(scoreBoard, dice)
         for cat in scoreBoard.open_cats():
-            directReward, bonus = scoreBoard.check_points(dice, cat)
-            uSum = scoreBoard.getUpperSum()
-            if cat <= 5 and uSum < 63 and uSum + directReward >= 63:
-                directReward += 35
+            score, bonus = scoreBoard.check_points(dice, cat)
+            directReward = score + bonus
+#            uSum = scoreBoard.getUpperSum()
+#            if cat <= 5 and uSum < 63 and uSum + directReward >= 63:
+#                directReward += 35
 #            score = self.cat_predict(scoreBoard, dice, cat)
 #            assert len(score)==1
 #            score = score[0]
@@ -2039,8 +2041,8 @@ class PlayerAI_full_v1(AbstractPlayer):
             tmpSB = scoreBoard.copy()
             tmpSB.add(dice, cat)
 #            score += self.catMLParas['gamma'] * self.predict_score(tmpSB)
-            x = self.encode_scrRgr_x(tmpSB).reshape(1, -1)
-            futureReward = self.scrRgr.predict(x)[0]
+            x = self.encode_SC(tmpSB).reshape(1, -1)
+            futureReward = self.rgrSC.predict(x)[0]
 #            lp(x, futureReward)
             
             reward = directReward + self.gamma * futureReward
@@ -2054,22 +2056,24 @@ class PlayerAI_full_v1(AbstractPlayer):
             lp(opts)
         return opts
     
+    
+    
     def eval_options_reroll(self, sb, dice, att):
         opts = []
         keepDices = []
         for reroll in product([True, False], repeat=5):
             # avoid unnecessary rerolls ([1, 2r, 2, 3, 4] and [1, 2, 2r, 3, 4])
-            keepDice = dice.vals[np.logical_not(reroll)]
-#            if keepDice in keepDices:
+#            keepDice = dice.vals[np.logical_not(reroll)]
+            keepDice = dice.keep(reroll).vals
             if arreq_in_list(keepDice, keepDices):
                 continue
             else:
                 keepDices += [keepDice]
-#            lp(reroll)
-            x = self.encode_rrRgr_x(sb, att, dice, reroll).reshape(1, -1)
-            reward = self.rrRgr.predict(x)[0]
+            
+            x = self.encode_Rr(sb, att, dice, reroll).reshape(1, -1)
+            reward = self.rgrRr.predict(x)[0]
             opts += [(reroll, reward)]
-#        lp(opts)
+
         opts = sorted(opts, key=lambda x: x[1], reverse=True)
         return opts
     
@@ -2107,8 +2111,21 @@ class PlayerAI_full_v1(AbstractPlayer):
         x[:13] = scoreBoard.mask.astype(int)
         x[13] = self.encode_bonus(scoreBoard)
 #        x[13] = scoreBoard.getUpperSum() / 63
-
         return x
+    def predict_SC(self, scoreBoard):
+        """Includes exception handling for direct predict call"""
+        x = self.encode_SC(scoreBoard)
+        try:
+            y = self.rgrSC.predict(x.reshape(1, -1))[0]
+        except NotFittedError:
+            y = 0
+        return y
+    def repMemSC_xy(self, ind):
+        """Constructs input (x), output (y) tuple from replay memory."""
+        sbOld, rew, sbNew = self.repMemSC[ind]
+        x = self.encode_SC(sbOld)
+        y = rew + self.gamma * self.encode_SC(sbNew)
+        return x, y
     
     @property
     def nFeat_Rr(self):
@@ -2124,13 +2141,34 @@ class PlayerAI_full_v1(AbstractPlayer):
         1: attempt
         1: bonus
         """
-#        keepDice = dice.vals[np.logical_not(deciRr)]
         x = np.zeros(shape=(self.nFeat_rrRgr))
         x[:13] = scoreBoard.mask.astype(int)
         x[13:26] = self.rgrEx.predict(self.encode_Ex(dice, deciRr))
         x[26] = attempt
         x[27] = self.encode_bonus(scoreBoard)
         return x
+    def predict_Rr(self, scoreBoard, attempt, dice, deciRr):
+        """Includes exception handling for direct predict call"""
+        x = self.encode_Rr(scoreBoard, attempt, dice, deciRr)
+        try:
+            y = self.rgrRr.predict(x.reshape(1, -1))[0]
+        except NotFittedError:
+            y = 0
+        return y
+    def repMemRr_xy(self, ind):
+        """Constructs input (x), output (y) tuple from replay memory."""
+        sb, attempt, diceOld, deciRr, diceNew = self.repMemRr[ind]
+        x = self.encode_Rr(sb, attempt, diceOld, deciRr)
+        if attempt == 0:
+            opts = self.eval_options_reroll(sb, diceNew, 1)
+            y = self.gamma * opts[0][1]
+        else:
+            assert attempt == 1
+            opts = self.eval_options_cat(sb, diceNew)
+            # evaluate SC forfast before reroll
+            yOld = self.rgrSC.predict(self.encode_SC(sb))
+            y = self.gamma * (opts[0][1] - yOld)
+        return x, y
     
     @property
     def nFeat_Ex(self):
@@ -2147,9 +2185,23 @@ class PlayerAI_full_v1(AbstractPlayer):
         x = np.zeros(shape=(self.nFeat_rrRgr))
         x[:len(keepDice)] = keepDice
         return x
+    def predict_Ex(self, dice, deciRr):
+        """Includes exception handling for direct predict call"""
+        x = self.encode_Ex(dice, deciRr)
+        try:
+            y = self.rgrEx.predict(x.reshape(1, -1))[0]
+        except NotFittedError:
+            y = np.zeros(shape=(13))
+        return y
     def repMemEx_xy(self, ind):
         """Constructs input (x), output (y) tuple from replay memory."""
         dice0, deci, dice1 = self.repMemEx[ind]
+        x = self.encode_Ex(dice0, deci)
+        y = np.zeros(shape=(13))
+        sb = ScoreBoard()
+        for cc in range(13):
+            y[cc] = sb.check_points(dice1, cc)
+        return x, y
     
     def to_repMem(self, gameLog):
         """Add expereience to score regressor replay memory
@@ -2298,71 +2350,117 @@ class PlayerAI_full_v1(AbstractPlayer):
 
             self.add_to_scrRgrMem(game.log)
             self.add_to_rrRgrMem(game.log)
-
-            # scrRgr
-            if self.nGames ==0:
-                n_samples = len(self.srm)
-                X = np.empty(shape=(n_samples, self.nFeat_scrRgr))
-                y = np.empty(shape=(n_samples,))
-                for nn in range(n_samples):
-                    sb1, reward, sb2 = self.srm[nn]
-                    X[nn, :] = self.encode_scrRgr_x(sb1).reshape(1,-1)
-                    y[nn] = reward
-                with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore", category=ConvergenceWarning)
-                    self.scrRgr = self.scrRgr.fit(X, y)
-                
-            else:
-                n_samples = self.lenScrMiniBatch
-                X = np.empty(shape=(n_samples, self.nFeat_scrRgr))
-                y = np.empty(shape=(n_samples,))
-                for nn in range(n_samples):
-                    ind = np.random.choice(list(range(len(self.srm))), replace=False)
-                    sb1, dirRew, sb2 = self.srm[ind]
-                    X[nn, :] = self.encode_scrRgr_x(sb1).reshape(1,-1)
-                    xSb2 = self.encode_scrRgr_x(sb2).reshape(1,-1)
-                    futRew = self.scrRgr.predict(xSb2)[0]
-                    y[nn] = dirRew + self.gamma * futRew
-                for ii in range(self.nIterPartFit):
-                    # perform multiple fit iterations
-                    self.scrRgr = self.scrRgr.partial_fit(X, y)
-
             
-            # rrRgr
-            if self.nGames ==0:
-                n_samples = len(self.rrm)
-                X = np.empty(shape=(n_samples, self.nFeat_rrRgr))
-                y = np.empty(shape=(n_samples,))
-                for nn in range(n_samples):
-                    sb, att, dice0, reroll, dice1 = self.rrm[nn]
-                    X[nn, :] = (
-                            self.encode_rrRgr_x(sb, att, dice0, reroll)
-                            .reshape(1,-1))
-                    y[nn] = 0
-                with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore", category=ConvergenceWarning)
-                    self.rrRgr = self.rrRgr.fit(X, y)
-            else:
-                n_samples = self.lenScrMiniBatch
-                X = np.empty(shape=(n_samples, self.nFeat_rrRgr))
-                y = np.empty(shape=(n_samples,))
-                for nn in range(n_samples):
-                    ind = np.random.choice(list(range(len(self.rrm))), replace=False)
-                    sb, att, diceOld, reroll, diceNew = self.rrm[ind]
-                    X[nn, :] = (
-                            self.encode_rrRgr_x(sb, att, diceOld, reroll)
-                            .reshape(1,-1))
-                    if att == 0:
-#                        xNext = self.encode_rrRgr_x(sb, att, dice0, reroll)
+            
+            #rgrSC
+            n_samples = self.nGamesPartFit * 13
+            X = np.empty(shape=(n_samples, self.nFeat_SC))
+            y = np.empty(shape=(n_samples,))
+            allInds = list(range(len(self.repMemSC)))
+            replace=False
+            if len(allInds) < n_samples:
+                replace = True
+            inds = np.random.choice(allInds, size=n_samples, replace=replace)
+            for nn, ind in enumerate(inds):
+                X[nn, :], y[nn] = self.repMemSC_xy(ind)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=ConvergenceWarning)
+                self.rgrSC = self.rgrSC.partial_fit(X, y)
+            
+            #rgrRr
+            n_samples = self.nGamesPartFit * 26
+            X = np.empty(shape=(n_samples, self.nFeat_Rr))
+            y = np.empty(shape=(n_samples,))
+            allInds = list(range(len(self.repMemRr)))
+            replace=False
+            if len(allInds) < n_samples:
+                replace = True
+            inds = np.random.choice(allInds, size=n_samples, replace=replace)
+            for nn, ind in enumerate(inds):
+                X[nn, :], y[nn] = self.repMemRr_xy(ind)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=ConvergenceWarning)
+                self.rgrRr = self.rgrRr.partial_fit(X, y)
+            
+            #rgrEx
+            n_samples = self.nGamesPartFit * 26
+            X = np.empty(shape=(n_samples, self.nFeat_Ex))
+            y = np.empty(shape=(n_samples,))
+            allInds = list(range(len(self.repMemEx)))
+            replace=False
+            if len(allInds) < n_samples:
+                replace = True
+            inds = np.random.choice(allInds, size=n_samples, replace=replace)
+            for nn, ind in enumerate(inds):
+                X[nn, :], y[nn] = self.repMemEx_xy(ind)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=ConvergenceWarning)
+                self.rgrEx = self.rgrEx.partial_fit(X, y)
+
+#            # scrRgr
+#            if self.nGames ==0:
+#                n_samples = len(self.srm)
+#                X = np.empty(shape=(n_samples, self.nFeat_scrRgr))
+#                y = np.empty(shape=(n_samples,))
+#                for nn in range(n_samples):
+#                    sb1, reward, sb2 = self.srm[nn]
+#                    X[nn, :] = self.encode_scrRgr_x(sb1).reshape(1,-1)
+#                    y[nn] = reward
+#                with warnings.catch_warnings():
+#                    warnings.filterwarnings("ignore", category=ConvergenceWarning)
+#                    self.scrRgr = self.scrRgr.fit(X, y)
+#                
+#            else:
+#                n_samples = self.lenScrMiniBatch
+#                X = np.empty(shape=(n_samples, self.nFeat_scrRgr))
+#                y = np.empty(shape=(n_samples,))
+#                for nn in range(n_samples):
+#                    ind = np.random.choice(list(range(len(self.srm))), replace=False)
+#                    sb1, dirRew, sb2 = self.srm[ind]
+#                    X[nn, :] = self.encode_scrRgr_x(sb1).reshape(1,-1)
+#                    xSb2 = self.encode_scrRgr_x(sb2).reshape(1,-1)
+#                    futRew = self.scrRgr.predict(xSb2)[0]
+#                    y[nn] = dirRew + self.gamma * futRew
+#                for ii in range(self.nIterPartFit):
+#                    # perform multiple fit iterations
+#                    self.scrRgr = self.scrRgr.partial_fit(X, y)
+#
+#            
+#            # rrRgr
+#            if self.nGames ==0:
+#                n_samples = len(self.rrm)
+#                X = np.empty(shape=(n_samples, self.nFeat_rrRgr))
+#                y = np.empty(shape=(n_samples,))
+#                for nn in range(n_samples):
+#                    sb, att, dice0, reroll, dice1 = self.rrm[nn]
+#                    X[nn, :] = (
+#                            self.encode_rrRgr_x(sb, att, dice0, reroll)
 #                            .reshape(1,-1))
-                        opts = self.eval_options_reroll(sb, diceNew, 1)
-                        y[nn] = opts[0][1]
-                    elif att == 1:
-                        opts = self.eval_options_cat(sb, diceNew)
-                        y[nn] = opts[0][1]
-                    else:
-                        assert False
-                self.rrRgr = self.rrRgr.partial_fit(X, y)
+#                    y[nn] = 0
+#                with warnings.catch_warnings():
+#                    warnings.filterwarnings("ignore", category=ConvergenceWarning)
+#                    self.rrRgr = self.rrRgr.fit(X, y)
+#            else:
+#                n_samples = self.lenScrMiniBatch
+#                X = np.empty(shape=(n_samples, self.nFeat_rrRgr))
+#                y = np.empty(shape=(n_samples,))
+#                for nn in range(n_samples):
+#                    ind = np.random.choice(list(range(len(self.rrm))), replace=False)
+#                    sb, att, diceOld, reroll, diceNew = self.rrm[ind]
+#                    X[nn, :] = (
+#                            self.encode_rrRgr_x(sb, att, diceOld, reroll)
+#                            .reshape(1,-1))
+#                    if att == 0:
+##                        xNext = self.encode_rrRgr_x(sb, att, dice0, reroll)
+##                            .reshape(1,-1))
+#                        opts = self.eval_options_reroll(sb, diceNew, 1)
+#                        y[nn] = opts[0][1]
+#                    elif att == 1:
+#                        opts = self.eval_options_cat(sb, diceNew)
+#                        y[nn] = opts[0][1]
+#                    else:
+#                        assert False
+#                self.rrRgr = self.rrRgr.partial_fit(X, y)
             self.nGames += 1
     
     def save(self, filename):

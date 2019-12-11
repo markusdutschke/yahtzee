@@ -23,12 +23,12 @@ def roll_dice(nDice=5):
     return dice
 
 class Dice:
-    
+    """Stores the result of 0 to 5 dice"""
     def __init__(self, vals=None):
         if vals is None:
             self.vals = np.sort(np.random.randint(1,7,5))
         else:
-            assert len(vals) == 5
+            assert len(vals) <= 5
             self.vals = np.sort(vals)
 #    # trivial iteration for lst = list(game) functionality
 #    # https://www.programiz.com/python-programming/iterator
@@ -54,6 +54,12 @@ class Dice:
         newVals = np.sort(newVals)
         return Dice(newVals)
 #        lp(self.vals)
+    
+    def keep(self, reroll):
+        """reroll: [bool]*5, True means reroll
+        returns 0 to 5 dice as Dice object"""
+        keepDice = self.vals[np.logical_not(reroll)]
+        return Dice(keepDice)
     
     def __str__(self):
         return ', '.join(['{:.0f}'.format(val) for val in self.vals])
