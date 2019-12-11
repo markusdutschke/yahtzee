@@ -2005,7 +2005,7 @@ class PlayerAI_full_v1(AbstractPlayer):
         opts = self.eval_options_reroll(scoreBoard, dice, attempt)
         return opts[0][0], str(opts)
     
-    def choose_cat(self, scoreBoard, dice, debugLevel=0):
+    def choose_cat(self, scoreBoard, dice):
         opts = self.eval_options_cat(scoreBoard, dice)
         return opts[0][0], str(opts)
     
@@ -2015,9 +2015,7 @@ class PlayerAI_full_v1(AbstractPlayer):
         returns: [(cat, score), (cat, score), ...]
         """
         opts = []
-        if debug==1:
-            lp('todo: check reward', self.gamma)
-            lp(scoreBoard, dice)
+
         for cat in scoreBoard.open_cats():
             score, bonus = scoreBoard.check_points(dice, cat)
             directReward = score + bonus

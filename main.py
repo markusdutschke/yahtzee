@@ -160,27 +160,27 @@ def main4_evaluateModels():
 
 def main5_trainFullAIPlayer():
     print('Training Intelligent Player:')
-    player = bot.PlayerAI_full_v1()
+    player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame0.pick')
     
     playerFn = (
             lambda it: './tmp/{:}-nGame{:d}.pick'
             .format(player.name, it))
     
-    loadIter = 0  # 0: OFF
-    try:
-        player.load(playerFn(loadIter))
-    except FileNotFoundError:
-        print('No player model saved. Starting Training from zero ...')
-    else:
-        print('Loaded player from file:', playerFn(loadIter))
-        m, s = player.benchmark(seed=None)
-        name = player.name + ' ('+str(player.nGames) + ' games)'
-        lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
+#    loadIter = 0  # 0: OFF
+#    try:
+#        player.load(playerFn(loadIter))
+#    except FileNotFoundError:
+#        print('No player model saved. Starting Training from zero ...')
+#    else:
+#        print('Loaded player from file:', playerFn(loadIter))
+#        m, s = player.benchmark(seed=None)
+#        name = player.name + ' ('+str(player.nGames) + ' games)'
+#        lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
     
     
     nGames = list(range(0,10000,100))
     nGames = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100, 200, 500, 1000, 1053] # + list(range(900,1400,1))
-#    nGames = list(range(0,100,10)) + list(range(100,10000,100))
+    nGames = list(range(0,100,10)) + list(range(100,10000,100))
     for nT in nGames:
         nT = int(nT)
         if nT<=player.nGames:
