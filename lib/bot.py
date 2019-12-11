@@ -1965,10 +1965,8 @@ class PlayerAI_full_v1(AbstractPlayer):
     def __init__(
             self,
             rgrSCArgs={'hidden_layer_sizes':(20, 10)},
-#            lenScrReplayMem=13*100, lenScrMiniBatch=13*50,
-            rgrRrArgs={'hidden_layer_sizes':(40, 40, 40, 40, 40, 10)},
-#            lenRrReplayMem=26*100, lenRrMiniBatch=26*50,
-            rgrChArgs={'hidden_layer_sizes':( 20, 10)},
+            rgrRrArgs={'hidden_layer_sizes':(30, 30, 15)},
+            rgrExArgs={'hidden_layer_sizes':( 20, 20)},
             nGamesPreplayMem=200,
             nGamesPartFit=50,
             nRepPartFit=5,
@@ -1988,15 +1986,10 @@ class PlayerAI_full_v1(AbstractPlayer):
         
         self.rgrSC = MLPRegressor(**rgrSCArgs)
         self.rgrRr = MLPRegressor(**rgrRrArgs)
-        self.rgrEx = MLPRegressor(**rgrChArgs)
-#        self.scrRgr = MLPRegressor(hidden_layer_sizes=(40, 50, 40, 25, 20, 10))
+        self.rgrEx = MLPRegressor(**rgrExArgs)
         self.repMemSC = []
         self.repMemRr = []
         self.repMemEx = []
-#        self.lenScrReplayMem = lenScrReplayMem
-#        self.lenScrMiniBatch = lenScrMiniBatch
-#        self.lenRrReplayMem = lenRrReplayMem
-#        self.lenRrMiniBatch = lenRrMiniBatch
         self.nGamesPreplayMem = nGamesPreplayMem
         self.nGamesPartFit = nGamesPartFit
         self.nRepPartFit = nRepPartFit
@@ -2005,9 +1998,7 @@ class PlayerAI_full_v1(AbstractPlayer):
         
         if fn is not None:
             self.load(fn)
-#        lp(self.scrRgr.get_params())
-#        assert False
-#        lp('todo check gamma=0')
+            
         
         
     def choose_reroll(self, scoreBoard, dice, attempt):
@@ -2018,7 +2009,7 @@ class PlayerAI_full_v1(AbstractPlayer):
         opts = self.eval_options_cat(scoreBoard, dice)
         return opts[0][0], str(opts)
     
-    def eval_options_cat(self, scoreBoard, dice, debug=0):
+    def eval_options_cat(self, scoreBoard, dice):
         """Return a sorted list with the options to choose for cat and
         the expected restScore.
         returns: [(cat, score), (cat, score), ...]
@@ -2030,31 +2021,17 @@ class PlayerAI_full_v1(AbstractPlayer):
         for cat in scoreBoard.open_cats():
             score, bonus = scoreBoard.check_points(dice, cat)
             directReward = score + bonus
-#            uSum = scoreBoard.getUpperSum()
-#            if cat <= 5 and uSum < 63 and uSum + directReward >= 63:
-#                directReward += 35
-#            score = self.cat_predict(scoreBoard, dice, cat)
-#            assert len(score)==1
-#            score = score[0]
             
             # additionally consider the resulting state of the score board
             tmpSB = scoreBoard.copy()
             tmpSB.add(dice, cat)
-#            score += self.catMLParas['gamma'] * self.predict_score(tmpSB)
-#            x = self.encode_SC(tmpSB).reshape(1, -1)
-#            futureReward = self.rgrSC.predict(x)[0]
             futureReward = self.predict_SC(tmpSB)
-#            lp(x, futureReward)
             
             reward = directReward + self.gamma * futureReward
             opts += [(cat, reward, directReward, futureReward)]
             
-            if debug==1:
-                lp(ScoreBoard.cats[cat], directReward, futureReward)
             
         opts = sorted(opts, key=lambda x: x[1], reverse=True)
-        if debug==1:
-            lp(opts)
         return opts
     
     
@@ -2064,15 +2041,12 @@ class PlayerAI_full_v1(AbstractPlayer):
         keepDices = []
         for reroll in product([True, False], repeat=5):
             # avoid unnecessary rerolls ([1, 2r, 2, 3, 4] and [1, 2, 2r, 3, 4])
-#            keepDice = dice.vals[np.logical_not(reroll)]
             keepDice = dice.keep(reroll).vals
             if arreq_in_list(keepDice, keepDices):
                 continue
             else:
                 keepDices += [keepDice]
-            
-#            x = self.encode_Rr(sb, att, dice, reroll).reshape(1, -1)
-#            reward = self.rgrRr.predict(x)[0]
+
             reward = self.predict_Rr(sb, att, dice, reroll)
             opts += [(reroll, reward)]
 
@@ -2112,7 +2086,6 @@ class PlayerAI_full_v1(AbstractPlayer):
         x = np.zeros(shape=(self.nFeat_SC))
         x[:13] = scoreBoard.mask.astype(int)
         x[13] = self.encode_bonus(scoreBoard)
-#        x[13] = scoreBoard.getUpperSum() / 63
         return x
     def predict_SC(self, scoreBoard):
         """Includes exception handling for direct predict call"""
@@ -2145,7 +2118,6 @@ class PlayerAI_full_v1(AbstractPlayer):
         """
         x = np.zeros(shape=(self.nFeat_Rr))
         x[:13] = scoreBoard.mask.astype(int)
-#        x[13:26] = self.rgrEx.predict(self.encode_Ex(dice, deciRr))
         x[13:26] = self.predict_Ex(dice, deciRr)
         x[26] = attempt
         x[27] = self.encode_bonus(scoreBoard)
@@ -2169,7 +2141,6 @@ class PlayerAI_full_v1(AbstractPlayer):
             assert attempt == 1
             opts = self.eval_options_cat(sb, diceNew)
             # evaluate SC forfast before reroll
-#            yOld = self.rgrSC.predict(self.encode_SC(sb))
             yOld = self.predict_SC(sb)
             y = self.gamma * (opts[0][1] - yOld)
         return x, y
@@ -2234,7 +2205,6 @@ class PlayerAI_full_v1(AbstractPlayer):
             self.repMemRr += [(sb1, 1, dice1, deci1, dice2)]
             
             self.repMemEx += [(dice0, deci0, dice1), (dice1, deci1, dice2)]
-            
             
         self.repMemSC = self.repMemSC[-self.nGamesPreplayMem*13:]
         self.repMemRr = self.repMemRr[-self.nGamesPreplayMem*26:]
@@ -2351,11 +2321,7 @@ class PlayerAI_full_v1(AbstractPlayer):
                         fct_choose_reroll=fct_choose_reroll)
 
             game = Game(tmpPlayer)
-
-#            self.add_to_scrRgrMem(game.log)
-#            self.add_to_rrRgrMem(game.log)
             self.to_repMem(game.log)
-            
             
             #rgrSC
             n_samples = self.nGamesPartFit * 13
@@ -2367,11 +2333,25 @@ class PlayerAI_full_v1(AbstractPlayer):
                 replace = True
             inds = np.random.choice(allInds, size=n_samples, replace=replace)
             for nn, ind in enumerate(inds):
-#                lp(self.repMemSC_xy(ind))
                 X[nn, :], y[nn] = self.repMemSC_xy(ind)
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=ConvergenceWarning)
                 self.rgrSC = self.rgrSC.partial_fit(X, y)
+            
+            #rgrEx
+            n_samples = self.nGamesPartFit * 26
+            X = np.empty(shape=(n_samples, self.nFeat_Ex))
+            y = np.empty(shape=(n_samples, 13))
+            allInds = list(range(len(self.repMemEx)))
+            replace=False
+            if len(allInds) < n_samples:
+                replace = True
+            inds = np.random.choice(allInds, size=n_samples, replace=replace)
+            for nn, ind in enumerate(inds):
+                X[nn, :], y[nn, :] = self.repMemEx_xy(ind)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=ConvergenceWarning)
+                self.rgrEx = self.rgrEx.partial_fit(X, y)
             
             #rgrRr
             n_samples = self.nGamesPartFit * 26
@@ -2387,23 +2367,6 @@ class PlayerAI_full_v1(AbstractPlayer):
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=ConvergenceWarning)
                 self.rgrRr = self.rgrRr.partial_fit(X, y)
-            
-            #rgrEx
-            n_samples = self.nGamesPartFit * 26
-            X = np.empty(shape=(n_samples, self.nFeat_Ex))
-            y = np.empty(shape=(n_samples, 13))
-            allInds = list(range(len(self.repMemEx)))
-            replace=False
-            if len(allInds) < n_samples:
-                replace = True
-            inds = np.random.choice(allInds, size=n_samples, replace=replace)
-            for nn, ind in enumerate(inds):
-#                lp(self.repMemEx_xy(ind))
-                X[nn, :], y[nn, :] = self.repMemEx_xy(ind)
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", category=ConvergenceWarning)
-                self.rgrEx = self.rgrEx.partial_fit(X, y)
-
 
             self.nGames += 1
     
@@ -2413,7 +2376,11 @@ class PlayerAI_full_v1(AbstractPlayer):
     
     # https://stackoverflow.com/a/37658673
     def load(self, filename):
-#        newObj = func(self)
-#        self.__dict__.update(newObj.__dict__)
-        player = pickle.load(open(filename, "rb"))
-        self.__dict__.update(player.__dict__)
+        try:
+            player = pickle.load(open(filename, "rb"))
+        except FileNotFoundError:
+            print('Coluld not loaded player! File:', filename, 'not found!')
+            return
+        else:
+            self.__dict__.update(player.__dict__)
+            print('Loaded player from file:', filename)
