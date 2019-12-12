@@ -206,6 +206,20 @@ def main6_playAGame():
         game = Game(player)
         print(game)
 
+
+def main7_benchmark_v1Ex():
+    print('main7_benchmark_v1Ex()')
+    
+    
+    nTrainings = [10, 100, 1000, 10000, 100000]
+    for nt in nTrainings:
+        player = bot.PlayerAI_full_v1()
+        player.aux_Ex_train(n=nt)
+        m, s = player.aux_Ex_benchmark(n=100, nMC=1000)
+        lp(nt, ':', m, s)
+
+
+
 def demo():
     print('='*80 + '\n' +
           'Lets first have a look at the final performance of the trained AI:'
@@ -286,6 +300,7 @@ if __name__== "__main__":
 #    main3_initLearningPlayer()
 #    main4_evaluateModels()
     
-    main5_trainFullAIPlayer()
+#    main5_trainFullAIPlayer()
 #    main6_playAGame()
+    main7_benchmark_v1Ex()
     

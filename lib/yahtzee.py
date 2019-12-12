@@ -55,7 +55,7 @@ class Dice:
         return Dice(newVals)
 #        lp(self.vals)
     
-    def keep(self, reroll):
+    def reroll(self, reroll):
         """reroll: [bool]*5, True means reroll
         returns 0 to 5 dice as Dice object"""
         keepDice = self.vals[np.logical_not(reroll)]
@@ -123,6 +123,9 @@ class ScoreBoard:
 #        lp(dice, type(dice))
         if isinstance(dice, Dice):
             dice = dice.vals
+        if len(dice)==0:
+            return 0, 0
+        assert len(dice) <= 5
         assert isinstance(dice, np.ndarray), str(dice) + '; ' + str(type(dice))
 #        assert self.scores.mask[cat], (
 #                'Mask must be True if dice should be assigned')

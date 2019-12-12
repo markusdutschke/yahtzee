@@ -2039,7 +2039,7 @@ class PlayerAI_full_v1(AbstractPlayer):
         keepDices = []
         for reroll in product([True, False], repeat=5):
             # avoid unnecessary rerolls ([1, 2r, 2, 3, 4] and [1, 2, 2r, 3, 4])
-            keepDice = dice.keep(reroll).vals
+            keepDice = dice.reroll(reroll).vals
             if arreq_in_list(keepDice, keepDices):
                 continue
             else:
@@ -2168,13 +2168,74 @@ class PlayerAI_full_v1(AbstractPlayer):
         return y
     def repMemEx_xy(self, ind):
         """Constructs input (x), output (y) tuple from replay memory."""
-        dice0, deci, dice1 = self.repMemEx[ind]
-        x = self.encode_Ex(dice0, deci)
+        diceOld, deci, diceNew = self.repMemEx[ind]
+        return self.encode_Ex_xy(diceOld, deci, diceNew)
+    def encode_Ex_xy(self, diceOld, deci, diceNew):
+        x = self.encode_Ex(diceOld, deci)
         y = np.zeros(shape=(13))
         sb = ScoreBoard()
         for cc in range(13):
-            y[cc], bonus = sb.check_points(dice1, cc)
+            y[cc], bonus = sb.check_points(diceNew, cc)
         return x, y
+    
+    def aux_Ex_genPairs(self, n, seed=None):
+        """generates diceOld, deci, diceNew pairs, 
+        which can be used for training or testing
+        
+        n : int
+            number of pairs
+        seed : int
+            random numbers seed
+        
+        returns:
+            list of (diceOld, deci, diceNew) tuples
+        """
+        if seed is not None:
+            np.random.seed(seed)
+        lst = []
+        for nn in range(n):
+            diceOld = Dice()
+            deci = np.random.choice([True, False], size=5)
+            diceNew = diceOld.reroll(deci)
+            lst += [(diceOld, deci, diceNew)]
+        return lst
+    def aux_Ex_train(self, n, seed=None):
+        """trains rgrEx separately
+        
+        n : int
+            number of pairs
+        seed : int
+            random numbers seed
+        """
+        lst = self.aux_Ex_genPairs(n, seed)
+        X = np.empty(shape=(n, self.nFeat_Ex))
+        y = np.empty(shape=(n, 13))
+        for nn in range(n):
+            X[nn, :], y[nn, :] = self.encode_Ex_xy(*lst[nn])
+        self.rgrEx = self.rgrEx.fit(X, y)
+    def aux_Ex_benchmark(self, n, nMC, seed=None):
+        """trains rgrEx separately
+        
+        n : int
+            number of pairs
+        nMC : int
+            number of Monte Carlo trials to verify
+        seed : int
+            random numbers seed
+        """
+        benchmark = []
+        for nn in range(n):
+            diceOld = Dice()
+            deciRr = np.random.choice([True, False], size=5)
+            x = self.encode_Ex(diceOld, deciRr)
+            y = self.rgrEx.predict(x.reshape(1, -1))[0]
+            yMC = np.empty(shape=(nMC, 13))
+            for mm in range(nMC):
+                diceNew = diceOld.reroll(deciRr)
+                _, yMC[mm, :] = self.encode_Ex_xy(diceOld, deciRr, diceNew)
+            yMC = np.mean(yMC, axis=0)
+            benchmark += [np.linalg.norm(y-yMC)]
+        return np.mean(benchmark), np.std(benchmark)
     
     def to_repMem(self, gameLog):
         """Add expereience to score regressor replay memory
