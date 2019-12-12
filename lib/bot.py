@@ -2148,15 +2148,22 @@ class PlayerAI_full_v1(AbstractPlayer):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 5
+        return 5 + 1 + 6
     def encode_Ex(self, dice, deciRr):
         """Encodes a scoreboard to a numpy array,
         which is used as the input layer
-        5: dice (values: 1-6 / to be rerolled: 0)
+        
+        input layer:
+            5: dice (values: 1-6 / to be rerolled: 0)
+            1: number of kept dice
+            6: histogramm (cats 1-6) * score
         """
         keepDice = dice.vals[np.logical_not(deciRr)]
         x = np.zeros(shape=(self.nFeat_Ex))
         x[:len(keepDice)] = keepDice
+        x[5] = len(keepDice)
+        hist = np.histogram(keepDice, bins=np.linspace(.5,6.5,7))[0]
+        x[6:12] = hist * np.array([1,2,3,4,5,6])
         return x
     def predict_Ex(self, dice, deciRr):
         """Includes exception handling for direct predict call"""
