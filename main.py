@@ -212,10 +212,11 @@ def main7_benchmark_v1Ex():
     
     
     nTrainings = [1e3, 1e4, 5e4, 1e5]
+    nTrainings = [1e5]
     for nt in nTrainings:
         nt = int(nt)
         player = bot.PlayerAI_full_v1()
-        player.aux_Ex_train(n=nt)
+        player.aux_Ex_train(n=nt, optRgrParas=True)
         m, s = player.aux_Ex_benchmark(n=100, nMC=100)
         lp(nt, ':', m, s)
 

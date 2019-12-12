@@ -1966,7 +1966,7 @@ class PlayerAI_full_v1(AbstractPlayer):
             self,
             rgrSCArgs={'hidden_layer_sizes':(20, 10)},
             rgrRrArgs={'hidden_layer_sizes':(20, 20)},
-            rgrExArgs={'hidden_layer_sizes':( 20, 30, 20)},
+            rgrExArgs={'hidden_layer_sizes':(20, 30, 20)},
             nGamesPreplayMem=200,
             nGamesPartFit=50,
             nRepPartFit=5,
@@ -2210,13 +2210,16 @@ class PlayerAI_full_v1(AbstractPlayer):
         deci = np.random.choice([True, False], size=5)
         diceNew = diceOld.reroll(deci)
         return diceOld, deci, diceNew
-    def aux_Ex_train(self, n, seed=None):
+    def aux_Ex_train(self, n, seed=None, optRgrParas=False):
         """trains rgrEx separately
         
         n : int
             number of pairs
         seed : int
             random numbers seed
+        optRgrParas : bool
+            To test different Regressor Layouts.
+            These can be used for self.rgrEx then.
         """
         if seed is not None:
             np.random.seed(seed)
@@ -2227,6 +2230,28 @@ class PlayerAI_full_v1(AbstractPlayer):
             diceOld, deci, diceNew = self.aux_Ex_genTrainingTuple()
             X[nn, :], y[nn, :] = self.encode_Ex_xy(diceOld, deci, diceNew)
         self.rgrEx = self.rgrEx.fit(X, y)
+        
+        if optRgrParas:
+            # https://stackoverflow.com/a/46031556
+            from sklearn.model_selection import GridSearchCV
+            param_grid = [
+                    {'activation' : ['identity', 'logistic', 'tanh', 'relu'],
+                     'solver' : ['lbfgs', 'sgd', 'adam'],
+                     'hidden_layer_sizes': [
+                             (10,), (20,), (30,),
+                             (10, 10), (20, 20), (30, 30),
+                             (10, 10, 10), (20, 20, 20), (30, 30, 30),
+                             (40, 40, 40),
+                             (20, 40, 40, 20, 30), (20, 30, 40, 40, 20),
+                             (40, 30, 20, 40, 20), (20, 40, 30, 40, 20),
+                             ]
+                     }
+                    ]
+            rgr = GridSearchCV(MLPRegressor(), param_grid, cv=5)#, scoring='accuracy')
+            rgr.fit(X,y)
+            lp("Best parameters set found on development set:")
+            lp(rgr.best_params_)
+        
     def aux_Ex_benchmark(self, n, nMC, seed=None):
         """trains rgrEx separately
         
