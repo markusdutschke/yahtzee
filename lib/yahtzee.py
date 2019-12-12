@@ -342,6 +342,7 @@ class Game:
         dfLog = self.log
 #        lp(dfLog)
         dfLog.index.name ='round'
+        sb = self.log.loc[13, 'scoreBoard']
         
         if debugLevel >= 1:
             for ii in range(13):
@@ -356,11 +357,6 @@ class Game:
         dfLog = dfLog.reset_index()
         dfLog =dfLog.set_index('deci2')
         dfLog = dfLog.sort_index()
-        
-#        lp(dfLog['info2'])
-        
-        
-                
 
         n = 36
         _str += ('='*n + ' Score Board ' + '='*n +'\n')
@@ -369,15 +365,16 @@ class Game:
         _str += ('-'*(2*n + 13) +'\n')
         
         for ii in range(13):
+            
             if ii == 6:
                 _str += ('-'*(2*n+13) +'\n')
-                upperSum = self.sb.getUpperSum()
+                upperSum = sb.getUpperSum()
                 _str += '{:16}: {:5} |\n'.format(
                         'Upper Sum', str(upperSum))
                 _str += '{:16}: {:5} |\n'.format(
                         'Bonus', '35' if upperSum >= 63 else '--')
                 _str += ('-'*(2*n+13) +'\n')
-            score = str(self.sb.scores[ii])
+            score = str(sb.scores[ii])
             line = '{:16}: {:5} | {:>5} - '.format(ScoreBoard.cats[ii], score,
                     str(dfLog.loc[ii, 'round']))
             for rr in [0,1]:
@@ -388,13 +385,13 @@ class Game:
             _str += (line +'\n')
         
         _str += ('='*(2*n+13) +'\n')
-        _str += (' '*(n+0) + ' Score: {:5d}\n'.format(self.sb.getSum()))
+        _str += (' '*(n+0) + ' Score: {:5d}\n'.format(sb.getSum()))
         _str += ('='*(2*n+13) +'\n')
         return _str
     
     @property
     def score(self):
-        return self.sb.getSum()
+        return self.log.loc[13, 'scoreBoard'].getSum()
 
 
 

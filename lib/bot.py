@@ -1965,8 +1965,8 @@ class PlayerAI_full_v1(AbstractPlayer):
     def __init__(
             self,
             rgrSCArgs={'hidden_layer_sizes':(20, 10)},
-            rgrRrArgs={'hidden_layer_sizes':(30, 30, 15)},
-            rgrExArgs={'hidden_layer_sizes':( 20, 20)},
+            rgrRrArgs={'hidden_layer_sizes':(20, 20)},
+            rgrExArgs={'hidden_layer_sizes':( 20, 30, 20)},
             nGamesPreplayMem=200,
             nGamesPartFit=50,
             nRepPartFit=5,

@@ -192,24 +192,15 @@ def main5_trainFullAIPlayer():
         
         player.save(playerFn(player.nGames))
         
-        assert m < 200, 'Found nice result'
+#        assert m < 200, 'Found nice result'
 
 
 def main6_playAGame():
     print('Check out some games:')
-    player = bot.PlayerAI_full_v0(fn='./trainedBots/PlayerAI_full_v0-nGame1053.pick')
+    player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame3600.pick')
     
-#    playerFn = (
-#            lambda it: './trainedBots/{:}-nGame{:d}.pick'
-#            .format(player.name, it))
-    
-    loadIter = 2400  # 0: OFF
-    try:
-        player.load(playerFn(loadIter))
-    except FileNotFoundError:
-        print('No player model saved. Starting Training from zero ...')
-    else:
-        print('Loaded player from file:', playerFn(loadIter))
+    lp(player.predict_Ex(Dice([5,5,5,5,5]),[True, True, False, False, False]))
+    lp(player.predict_Ex(Dice([1,2,3,4,5]),[True, True, False, True, False]))
     
     for ii in range(3):
         game = Game(player)
