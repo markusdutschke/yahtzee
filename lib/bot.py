@@ -2178,7 +2178,7 @@ class PlayerAI_full_v1(AbstractPlayer):
             y[cc], bonus = sb.check_points(diceNew, cc)
         return x, y
     
-    def aux_Ex_genPairs(self, n, seed=None):
+    def aux_Ex_genTrainingTuple(self, seed=None):
         """generates diceOld, deci, diceNew pairs, 
         which can be used for training or testing
         
@@ -2192,13 +2192,17 @@ class PlayerAI_full_v1(AbstractPlayer):
         """
         if seed is not None:
             np.random.seed(seed)
-        lst = []
-        for nn in range(n):
-            diceOld = Dice()
-            deci = np.random.choice([True, False], size=5)
-            diceNew = diceOld.reroll(deci)
-            lst += [(diceOld, deci, diceNew)]
-        return lst
+#        lst = []
+#        for nn in range(n):
+#            diceOld = Dice()
+#            deci = np.random.choice([True, False], size=5)
+#            diceNew = diceOld.reroll(deci)
+#            lst += [(diceOld, deci, diceNew)]
+#        return lst
+        diceOld = Dice()
+        deci = np.random.choice([True, False], size=5)
+        diceNew = diceOld.reroll(deci)
+        return diceOld, deci, diceNew
     def aux_Ex_train(self, n, seed=None):
         """trains rgrEx separately
         
@@ -2207,11 +2211,14 @@ class PlayerAI_full_v1(AbstractPlayer):
         seed : int
             random numbers seed
         """
-        lst = self.aux_Ex_genPairs(n, seed)
+        if seed is not None:
+            np.random.seed(seed)
+#        lst = self.aux_Ex_genPairs(n, seed)
         X = np.empty(shape=(n, self.nFeat_Ex))
         y = np.empty(shape=(n, 13))
         for nn in range(n):
-            X[nn, :], y[nn, :] = self.encode_Ex_xy(*lst[nn])
+            diceOld, deci, diceNew = self.aux_Ex_genTrainingTuple()
+            X[nn, :], y[nn, :] = self.encode_Ex_xy(diceOld, deci, diceNew)
         self.rgrEx = self.rgrEx.fit(X, y)
     def aux_Ex_benchmark(self, n, nMC, seed=None):
         """trains rgrEx separately
