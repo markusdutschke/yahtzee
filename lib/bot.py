@@ -2238,26 +2238,32 @@ class PlayerAI_full_v1(AbstractPlayer):
 #        lst = self.aux_Ex_genPairs(n, seed)
         X = np.empty(shape=(n, self.nFeat_Ex))
         y = np.empty(shape=(n, 13))
+        
         for nn in range(n):
-            diceOld = Dice()
-            deciRr = np.random.choice([True, False], size=5)
-            X[nn, :] = self.encode_Ex(diceOld, deciRr)
-            
-            # Monte Carlo simulation to get expection values in each cat
-            nMC = int(np.rint(facMC * 6**np.sum(deciRr)))
-            if np.sum(deciRr) == 0:
-                nMC = 1
-            yMC = np.empty(shape=(nMC, 13))
-            for mm in range(nMC):
-                diceNew = diceOld.reroll(deciRr)
-                yMC[mm, :] = self.encode_Ex_y(diceNew)
-            y[nn, :] = np.mean(yMC, axis=0)
-            
-#            diceOld, deci, diceNew = self.aux_Ex_genTrainingTuple()
-#            X[nn, :], y[nn, :] = self.encode_Ex_xy(diceOld, deci, diceNew)
-#            assert np.isfinite(X[nn, :]).all(), str(X[nn, :])
-#            assert np.isfinite(y[nn, :]).all(), str(y[nn, :])
+            diceOld, deci, diceNew = self.aux_Ex_genTrainingTuple()
+            X[nn, :], y[nn, :] = self.encode_Ex_xy(diceOld, deci, diceNew)
         self.rgrEx = self.rgrEx.fit(X, y)
+        
+#        for nn in range(n):
+#            diceOld = Dice()
+#            deciRr = np.random.choice([True, False], size=5)
+#            X[nn, :] = self.encode_Ex(diceOld, deciRr)
+#            
+#            # Monte Carlo simulation to get expection values in each cat
+#            nMC = int(np.rint(facMC * 6**np.sum(deciRr)))
+#            if np.sum(deciRr) == 0:
+#                nMC = 1
+#            yMC = np.empty(shape=(nMC, 13))
+#            for mm in range(nMC):
+#                diceNew = diceOld.reroll(deciRr)
+#                yMC[mm, :] = self.encode_Ex_y(diceNew)
+#            y[nn, :] = np.mean(yMC, axis=0)
+#            
+##            diceOld, deci, diceNew = self.aux_Ex_genTrainingTuple()
+##            X[nn, :], y[nn, :] = self.encode_Ex_xy(diceOld, deci, diceNew)
+##            assert np.isfinite(X[nn, :]).all(), str(X[nn, :])
+##            assert np.isfinite(y[nn, :]).all(), str(y[nn, :])
+#        self.rgrEx = self.rgrEx.fit(X, y)
         
         if optRgrParas:
             # https://stackoverflow.com/a/46031556

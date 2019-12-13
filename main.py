@@ -212,7 +212,7 @@ def main7_benchmark_v1Ex():
     
     
     nTrainings = [1e3, 1e4, 5e4, 1e5]
-    nTrainings = [1e1, 1e2, 5e2, 1e3]
+#    nTrainings = [1e1, 1e2, 5e2, 1e3]
 #    nTrainings = [1e5]
     for nt in nTrainings:
         nt = int(nt)
