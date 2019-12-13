@@ -2229,6 +2229,8 @@ class PlayerAI_full_v1(AbstractPlayer):
         for nn in range(n):
             diceOld, deci, diceNew = self.aux_Ex_genTrainingTuple()
             X[nn, :], y[nn, :] = self.encode_Ex_xy(diceOld, deci, diceNew)
+            assert np.isfinite(X[nn, :]).all(), str(X[nn, :])
+            assert np.isfinite(y[nn, :]).all(), str(y[nn, :])
         self.rgrEx = self.rgrEx.fit(X, y)
         
         if optRgrParas:
@@ -2240,14 +2242,16 @@ class PlayerAI_full_v1(AbstractPlayer):
                      'hidden_layer_sizes': [
                              (10,), (20,), (30,),
                              (10, 10), (20, 20), (30, 30),
-                             (10, 10, 10), (20, 20, 20), (30, 30, 30),
-                             (40, 40, 40),
-                             (20, 40, 40, 20, 30), (20, 30, 40, 40, 20),
-                             (40, 30, 20, 40, 20), (20, 40, 30, 40, 20),
+#                             (10, 10, 10), (20, 20, 20), (30, 30, 30),
+#                             (40, 40, 40),
+#                             (20, 40, 40, 20, 30), (20, 30, 40, 40, 20),
+#                             (40, 30, 20, 40, 20), (20, 40, 30, 40, 20),
                              ]
                      }
                     ]
             rgr = GridSearchCV(MLPRegressor(), param_grid, cv=5)#, scoring='accuracy')
+            assert np.isfinite(X).all(), str(X)
+            assert np.isfinite(y).all(), str(y)
             rgr.fit(X,y)
             lp("Best parameters set found on development set:")
             lp(rgr.best_params_)
