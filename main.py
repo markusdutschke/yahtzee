@@ -219,7 +219,10 @@ def main7_benchmark_v1Ex():
         player = bot.PlayerAI_full_v1()
         player.aux_Ex_train(n=nt, optRgrParas=False)
         m, s = player.aux_Ex_benchmark(n=100, facMC=2)
-        lp(nt, ':', m, s)
+#        lp(nt, ':', m, s)
+        lp('benchmark for', nt, 'gmaes:')
+        for ii in range(13):
+            print('\t{:20} {:.1f} {:.1f}'.format(ScoreBoard.cats[ii], m[ii], s[ii]))
 
 
 

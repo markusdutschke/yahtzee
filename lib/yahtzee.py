@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from comfct.debug import lp
 from copy import deepcopy
+from itertools import product
 
 
 def roll_dice(nDice=5):
@@ -55,7 +56,7 @@ class Dice:
         return Dice(newVals)
 #        lp(self.vals)
     
-    def reroll(self, reroll):
+    def keep(self, reroll):
         """reroll: [bool]*5, True means reroll
         returns 0 to 5 dice as Dice object"""
         keepDice = self.vals[np.logical_not(reroll)]
@@ -114,21 +115,16 @@ class ScoreBoard:
     def score(self):
         return self.getSum()
     
-    def check_points(self, dice, cat):
-        """Just check how many points one would get by assigning dice
-        to category number cat
-        dice:Dice
-        cat: int.
-        """
-#        lp(dice, type(dice))
+    
+    @classmethod
+    def get_cat_points(cls, dice, cat):
         if isinstance(dice, Dice):
             dice = dice.vals
         if len(dice)==0:
-            return 0, 0
+            return 0
         assert len(dice) <= 5
         assert isinstance(dice, np.ndarray), str(dice) + '; ' + str(type(dice))
-#        assert self.scores.mask[cat], (
-#                'Mask must be True if dice should be assigned')
+
         score = 0
         if cat>=0 and cat<=5:
             score=np.sum(dice[dice==(cat+1)])
@@ -164,6 +160,54 @@ class ScoreBoard:
             score=np.sum(dice)
         else:
             assert False, 'invalid category position, cat='+str(cat)
+        return score
+        
+    
+    @classmethod
+    def stat_cat_score(cls, dice):
+        """Statistical category score
+        
+        forcasts the statistically EXACT score in each category.
+        
+        dice are the fixed dice only
+        if len(dice.vals) == 5,
+        this is equivalent to check_points for all cats simulatenously
+        
+        returns
+        meanComb : np.ndarray shape=(13,)
+            mean score in each cat
+        semComb : np.ndarray shape=(13,)
+            standard error of the mean
+        """
+        assert 0 <= len(dice.vals) <= 5, str(dice)
+#        self.scores=np.ma.masked_array(np.empty(shape=13),mask=True,dtype=int)
+        
+        nRr = 5-len(dice.vals)
+        nCombs = 6**nRr
+
+        yCombs = np.empty(shape=(nCombs, 13))
+        for mm, comb in enumerate(product([1, 2, 3, 4, 5, 6], repeat=nRr)):
+#            diceNew = np.copy(dice.vals)
+            diceNew = Dice(list(comb) + list(dice.vals))
+#            diceNew = Dice(diceNew)
+#                lp(diceOld, deciRr, comb)
+            for cc in range(13):
+#                lp(diceNew, cc)
+                yCombs[mm, cc] = cls.get_cat_points(diceNew, cc)
+        meanComb = np.mean(yCombs, axis=0)
+        semComb = np.std(yCombs, axis=0) / nCombs**.5
+        
+        return meanComb, semComb
+    
+    
+    def check_points(self, dice, cat):
+        """Just check how many points one would get by assigning dice
+        to category number cat
+        dice:Dice
+        cat: int.
+        """
+#        lp(dice, type(dice))
+        score = ScoreBoard.get_cat_points(dice, cat)
         
         bonus = 0
         us = self.getUpperSum()
@@ -171,6 +215,7 @@ class ScoreBoard:
             bonus = 35
         return score, bonus
     
+    @classmethod
     def check_points_max(self, cat):
         maxPnts = {0: 5,
                    1: 10,

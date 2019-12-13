@@ -23,6 +23,7 @@ import warnings
 from sklearn.exceptions import ConvergenceWarning, NotFittedError
 from itertools import product
 import pickle
+#from itertools import product
 
 
 #def benchmark(player, nGames=100):
@@ -2042,7 +2043,7 @@ class PlayerAI_full_v1(AbstractPlayer):
         keepDices = []
         for reroll in product([True, False], repeat=5):
             # avoid unnecessary rerolls ([1, 2r, 2, 3, 4] and [1, 2, 2r, 3, 4])
-            keepDice = dice.reroll(reroll).vals
+            keepDice = dice.keep(reroll).vals
             if arreq_in_list(keepDice, keepDices):
                 continue
             else:
@@ -2185,11 +2186,14 @@ class PlayerAI_full_v1(AbstractPlayer):
         """Constructs input (x), output (y) tuple from replay memory."""
         diceOld, deci, diceNew = self.repMemEx[ind]
         return self.encode_Ex_xy(diceOld, deci, diceNew)
-    def encode_Ex_y(self, diceNew):
+    def encode_Ex_y(self, dice):
+        """Evaluate the score in each cat based on dice
+        dice : can be a 0 to 5 dice Dice object"""
         y = np.zeros(shape=(13))
         sb = ScoreBoard()
         for cc in range(13):
-            y[cc], bonus = sb.check_points(diceNew, cc)
+            y[cc], bonus = sb.check_points(dice, cc)
+#        lp(dice, y)
         return y
     def encode_Ex_xy(self, diceOld, deciRr, diceNew):
         x = self.encode_Ex(diceOld, deciRr)
@@ -2218,12 +2222,12 @@ class PlayerAI_full_v1(AbstractPlayer):
 #        for nn in range(n):
 #            diceOld = Dice()
 #            deci = np.random.choice([True, False], size=5)
-#            diceNew = diceOld.reroll(deci)
+#            diceNew = diceOld.roll(deci)
 #            lst += [(diceOld, deci, diceNew)]
 #        return lst
         diceOld = Dice()
         deci = np.random.choice([True, False], size=5)
-        diceNew = diceOld.reroll(deci)
+        diceNew = diceOld.roll(deci)
         return diceOld, deci, diceNew
     def aux_Ex_train(self, n, facMC=2, seed=None, optRgrParas=False):
         """trains rgrEx separately
@@ -2260,7 +2264,7 @@ class PlayerAI_full_v1(AbstractPlayer):
 #                nMC = 1
 #            yMC = np.empty(shape=(nMC, 13))
 #            for mm in range(nMC):
-#                diceNew = diceOld.reroll(deciRr)
+#                diceNew = diceOld.roll(deciRr)
 #                yMC[mm, :] = self.encode_Ex_y(diceNew)
 #            y[nn, :] = np.mean(yMC, axis=0)
 #            
@@ -2312,26 +2316,35 @@ class PlayerAI_full_v1(AbstractPlayer):
             x = self.encode_Ex(diceOld, deciRr)
             y = self.rgrEx.predict(x.reshape(1, -1))[0]
             
-            nMC = int(np.rint(facMC * 6**np.sum(deciRr)))
-            if np.sum(deciRr) == 0:
-                nMC = 1
-            yMC = np.empty(shape=(nMC, 13))
-            for mm in range(nMC):
-                diceNew = diceOld.reroll(deciRr)
-                yMC[mm, :] = self.encode_Ex_y(diceNew)
-            meanMC = np.mean(yMC, axis=0)
-            semMC = np.std(yMC, axis=0, ddof=1) / nMC**.5
-            dist = y - meanMC
-            dist = np.where(abs(dist) <= semMC, 0, dist)
-            dist = np.where(dist > 0, dist-semMC, dist)
-            dist = np.where(dist < 0, dist+semMC, dist)
-            lp(y)
-            lp(meanMC)
-            lp(semMC)
-            lp(dist)
+            diceKeep = diceOld.keep(deciRr)
+            meanComb, semComb = ScoreBoard.stat_cat_score(diceKeep)
             
-            benchmark += [np.linalg.norm(y-yMC)]
-        return np.mean(benchmark), np.std(benchmark)
+#            nRr = int(np.sum(deciRr))
+#            nCombs = 6**nRr
+#
+#            yCombs = np.empty(shape=(nCombs, 13))
+#            for mm, comb in enumerate(product([1, 2, 3, 4, 5, 6], repeat=nRr)):
+#                diceNew = np.copy(diceOld.vals)
+#                diceNew[deciRr] = comb
+#                diceNew = Dice(diceNew)
+##                lp(diceOld, deciRr, comb)
+#                yCombs[mm, :] = self.encode_Ex_y(diceNew)
+#            meanComb = np.mean(yCombs, axis=0)
+#            semComb = np.std(yCombs, axis=0) / nCombs**.5
+            dist = y - meanComb
+            dist = np.where(abs(dist) <= semComb, 0, dist)
+            dist = np.where(dist > 0, dist-semComb, dist)
+            dist = np.where(dist < 0, -dist+semComb, dist)
+            
+            assert (dist >= 0).all()
+#            lp(diceKeep)
+#            lp(y)
+#            lp(meanComb)
+#            lp(semComb)
+#            lp(dist)
+            
+            benchmark += [dist]
+        return np.mean(benchmark, axis=0), np.std(benchmark, axis=0)
     def aux_Ex_benchmark_bak(self, n, nMC, seed=None):
         """trains rgrEx separately
         
@@ -2350,7 +2363,7 @@ class PlayerAI_full_v1(AbstractPlayer):
             y = self.rgrEx.predict(x.reshape(1, -1))[0]
             yMC = np.empty(shape=(nMC, 13))
             for mm in range(nMC):
-                diceNew = diceOld.reroll(deciRr)
+                diceNew = diceOld.roll(deciRr)
                 _, yMC[mm, :] = self.encode_Ex_xy(diceOld, deciRr, diceNew)
             yMC = np.mean(yMC, axis=0)
             benchmark += [np.linalg.norm(y-yMC)]
