@@ -18,3 +18,16 @@ def list_cast(x): #casts x to a list
         return list(x)
     except TypeError:
         return [x]
+
+
+def split_in_consec_ints(lst):
+    """splits a list of integers in sublists with consequtive numbering"""
+    lst = sorted(set(lst))
+    splits = [0]
+    for ii, el in enumerate(lst[:-1]):
+        if el + 1 < lst[ii+1]:
+            splits += [ii+1]
+    splits += [len(lst)]
+#    print(splits)
+    slst = [lst[a:b] for a,b in zip(splits, splits[1:])]
+    return slst

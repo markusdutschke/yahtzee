@@ -8,24 +8,15 @@ Created on Fri Nov 22 18:41:30 2019
 
 import numpy as np
 
-a= [ np.array([1,2]), [4,3], [6,1], [4,2]]
-print(a)
+def split_in_consec_ints(lst):
+    splits = [0]
+    for ii, el in enumerate(lst[:-1]):
+        if el + 1 < lst[ii+1]:
+            splits += [ii+1]
+    splits += [len(lst)]
+    print(splits)
+    slst = [lst[a:b] for a,b in zip(splits, splits[1:])]
+    return slst
 
-el=np.array([1,2])
-print(el in a)
-
-#b = np.random.choice(a)
-#print(b)
-
-##print(np.sort(a, axis=0))
-#print( sorted(a, key=lambda x: x[0]))
-#
-#for a, b in {'a':1, 'b':2}.items():
-#    print(a,'-',b)
-#    
-#
-#a = [1,2,3]
-#print(a)
-#a.extend(range(4))
-#print(a)
-
+print(split_in_consec_ints([1,3,4, 5 , 7,8, 10]))
+print(sum([1, 2], 0))

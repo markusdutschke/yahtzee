@@ -14,7 +14,7 @@ import pandas as pd
 from yahtzee import Game, ScoreBoard, Dice
 from sklearn.neural_network import MLPRegressor
 from sklearn.utils.validation import check_is_fitted
-from comfct.list import list_cast
+from comfct.list import list_cast, split_in_consec_ints
 from comfct.numpy import weighted_choice, arreq_in_list
 #from tqdm import tqdm
 from progressbar import progressbar
@@ -2152,7 +2152,7 @@ class PlayerAI_full_v1(AbstractPlayer):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 5 + 1 + 6 + 1 + 5
+        return 5 + 1 + 6 + 1 + 5 + 2 + 4
     def encode_Ex(self, dice, deciRr):
         """Encodes a scoreboard to a numpy array,
         which is used as the input layer
@@ -2163,6 +2163,8 @@ class PlayerAI_full_v1(AbstractPlayer):
             6: histogramm (cats 1-6) * score
             1: sum(dice)
             5: number of 1ofAKind, double, triple, 4ofAKind, 5ofAKind
+            2: small straight indicators
+            4: large straight indicators
         """
         keepDice = dice.vals[np.logical_not(deciRr)]
         x = np.zeros(shape=(self.nFeat_Ex))
@@ -2173,6 +2175,21 @@ class PlayerAI_full_v1(AbstractPlayer):
         x[12] = np.sum(keepDice)
         for ii in range(1, 6):  # number of single, double, ...
             x[12 + ii] = len(hist[hist == ii])  # x[13]-x[17]
+        # small straight
+        if set([1, 2, 3]) <= set(keepDice) or set([4, 5, 6]) <= set(keepDice):
+            x[18] = 1  # 3 in a row, one open end
+        if set([2, 3, 4]) <= set(keepDice) or set([3, 4, 5]) <= set(keepDice):
+            x[19] = 1  # 3 in a row, two open ends
+        # large straight
+        for nr in range(2):
+            numbsInRange = set(keepDice) & set(range(1+nr, 6+nr))
+            x[20 + 2*nr] = len(numbsInRange)  # number of different dice
+            segs = split_in_consec_ints(numbsInRange)
+            segs = [len(sl) for sl in segs]
+            x[21 + 2*nr] = np.amax(segs)  # len of max consequtive sequence
+                
+        # how many numbers occupied in range 1-5
+        # max number of conseccutive in range 1-5
         return x
     def predict_Ex(self, dice, deciRr):
         """Includes exception handling for direct predict call"""
@@ -2309,7 +2326,8 @@ class PlayerAI_full_v1(AbstractPlayer):
         seed : int
             random numbers seed
         """
-        benchmark = []
+        bmAbs = []
+        bmRel = []
         for nn in range(n):
             diceOld = Dice()
             deciRr = np.random.choice([True, False], size=5)
@@ -2343,8 +2361,14 @@ class PlayerAI_full_v1(AbstractPlayer):
 #            lp(semComb)
 #            lp(dist)
             
-            benchmark += [dist]
-        return np.mean(benchmark, axis=0), np.std(benchmark, axis=0)
+            bmAbs += [dist]
+            norm = meanComb #(y + meanComb) / 2
+            norm = np.where(norm < 1, 1, norm)
+            bmRel += [dist/norm]
+
+        return np.mean(bmAbs, axis=0), np.mean(bmRel, axis=0)
+#        return np.mean(bmAbs, axis=0), np.std(benchmark, axis=0)
+    
     def aux_Ex_benchmark_bak(self, n, nMC, seed=None):
         """trains rgrEx separately
         
