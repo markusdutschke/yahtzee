@@ -223,6 +223,26 @@ def main7_benchmark_v1Ex():
         lp('benchmark for', nt, 'games:')
         for ii in range(13):
             print('\t{:20} {:.2f} {:.2f}'.format(ScoreBoard.cats[ii], m[ii], s[ii]))
+        
+#        lp(player.predict_Ex(Dice([1,2,3]+[5,5]), [False]*3+[True]*2))
+#        lp(player.predict_Ex(Dice([1,2,3,5]+[5]), [False]*4+[True]*1))
+#        lp(player.predict_Ex(Dice([2,2,3,3]+[5]), [False]*4+[True]*1))
+#        lp(player.predict_Ex(Dice([5,5,5,5]+[5]), [False]*4+[True]*1))
+#        lp(player.predict_Ex(Dice([1]+[2,2,4,5]), [False]*1+[True]*4))
+        
+        testSets = [[1,2,3], [1,2,3,4], [5,5], [2,2,3,3], [2,2,2,3], [2,2,2,2],
+                    [3,3,3]]
+        for keepDice in testSets:
+            nMiss = 5 - len(keepDice)
+            pred = player.predict_Ex(Dice(keepDice+[5]*nMiss),
+                                     [False]*len(keepDice)+[True]*nMiss)
+            ex, std = ScoreBoard.stat_cat_score(Dice(keepDice))
+            lp('predictions for situation:', str(keepDice))
+            for ii in range(13):
+                print('\t{:20} {:.2f} {:.2f}'.format(ScoreBoard.cats[ii], pred[ii], ex[ii]))
+        
+        print()
+        print()
 
 
 

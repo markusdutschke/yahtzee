@@ -2314,7 +2314,7 @@ class PlayerAI_full_v1(AbstractPlayer):
             lp("Best parameters set found on development set:")
             lp(rgr.best_params_)
         
-    def aux_Ex_benchmark(self, n, facMC, seed=None):
+    def aux_Ex_benchmark(self, n, seed=None):
         """trains rgrEx separately
         
         n : int
