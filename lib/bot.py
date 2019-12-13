@@ -1968,7 +1968,8 @@ class PlayerAI_full_v1(AbstractPlayer):
             rgrRrArgs={'hidden_layer_sizes':(20, 20)},
             rgrExArgs={'activation': 'tanh',
                        'solver': 'adam',
-                       'hidden_layer_sizes':(30, 30)},
+                       'hidden_layer_sizes':(30, 30),
+                       'max_iter': 1000},
             nGamesPreplayMem=200,
             nGamesPartFit=50,
             nRepPartFit=5,
@@ -2179,12 +2180,19 @@ class PlayerAI_full_v1(AbstractPlayer):
         """Constructs input (x), output (y) tuple from replay memory."""
         diceOld, deci, diceNew = self.repMemEx[ind]
         return self.encode_Ex_xy(diceOld, deci, diceNew)
-    def encode_Ex_xy(self, diceOld, deci, diceNew):
-        x = self.encode_Ex(diceOld, deci)
+    def encode_Ex_y(self, diceNew):
         y = np.zeros(shape=(13))
         sb = ScoreBoard()
         for cc in range(13):
             y[cc], bonus = sb.check_points(diceNew, cc)
+        return y
+    def encode_Ex_xy(self, diceOld, deciRr, diceNew):
+        x = self.encode_Ex(diceOld, deciRr)
+        y = self.encode_Ex_y(diceNew)
+#        y = np.zeros(shape=(13))
+#        sb = ScoreBoard()
+#        for cc in range(13):
+#            y[cc], bonus = sb.check_points(diceNew, cc)
         return x, y
     
     def aux_Ex_genTrainingTuple(self, seed=None):
@@ -2212,11 +2220,13 @@ class PlayerAI_full_v1(AbstractPlayer):
         deci = np.random.choice([True, False], size=5)
         diceNew = diceOld.reroll(deci)
         return diceOld, deci, diceNew
-    def aux_Ex_train(self, n, seed=None, optRgrParas=False):
+    def aux_Ex_train(self, n, facMC=2, seed=None, optRgrParas=False):
         """trains rgrEx separately
         
         n : int
             number of pairs
+        facMC : float
+            number of Monte Carlo trials / number of possible combinations
         seed : int
             random numbers seed
         optRgrParas : bool
@@ -2229,10 +2239,24 @@ class PlayerAI_full_v1(AbstractPlayer):
         X = np.empty(shape=(n, self.nFeat_Ex))
         y = np.empty(shape=(n, 13))
         for nn in range(n):
-            diceOld, deci, diceNew = self.aux_Ex_genTrainingTuple()
-            X[nn, :], y[nn, :] = self.encode_Ex_xy(diceOld, deci, diceNew)
-            assert np.isfinite(X[nn, :]).all(), str(X[nn, :])
-            assert np.isfinite(y[nn, :]).all(), str(y[nn, :])
+            diceOld = Dice()
+            deciRr = np.random.choice([True, False], size=5)
+            X[nn, :] = self.encode_Ex(diceOld, deciRr)
+            
+            # Monte Carlo simulation to get expection values in each cat
+            nMC = int(np.rint(facMC * 6**np.sum(deciRr)))
+            if np.sum(deciRr) == 0:
+                nMC = 1
+            yMC = np.empty(shape=(nMC, 13))
+            for mm in range(nMC):
+                diceNew = diceOld.reroll(deciRr)
+                yMC[mm, :] = self.encode_Ex_y(diceNew)
+            y[nn, :] = np.mean(yMC, axis=0)
+            
+#            diceOld, deci, diceNew = self.aux_Ex_genTrainingTuple()
+#            X[nn, :], y[nn, :] = self.encode_Ex_xy(diceOld, deci, diceNew)
+#            assert np.isfinite(X[nn, :]).all(), str(X[nn, :])
+#            assert np.isfinite(y[nn, :]).all(), str(y[nn, :])
         self.rgrEx = self.rgrEx.fit(X, y)
         
         if optRgrParas:
