@@ -218,7 +218,7 @@ def main7_benchmark_v1Ex():
         nt = int(nt)
         player = bot.PlayerAI_full_v1()
         player.aux_Ex_train(n=nt, optRgrParas=False)
-        m, s = player.aux_Ex_benchmark(n=100, nMC=100)
+        m, s = player.aux_Ex_benchmark(n=100, facMC=2)
         lp(nt, ':', m, s)
 
 

@@ -2151,7 +2151,7 @@ class PlayerAI_full_v1(AbstractPlayer):
         """size or regressor input, reffers to MLPRegressor.fit
         Directly coupled to self.encoder.
         """
-        return 5 + 1 + 6
+        return 5 + 1 + 6 + 1 + 5
     def encode_Ex(self, dice, deciRr):
         """Encodes a scoreboard to a numpy array,
         which is used as the input layer
@@ -2160,6 +2160,8 @@ class PlayerAI_full_v1(AbstractPlayer):
             5: dice (values: 1-6 / to be rerolled: 0)
             1: number of kept dice
             6: histogramm (cats 1-6) * score
+            1: sum(dice)
+            5: number of 1ofAKind, double, triple, 4ofAKind, 5ofAKind
         """
         keepDice = dice.vals[np.logical_not(deciRr)]
         x = np.zeros(shape=(self.nFeat_Ex))
@@ -2167,6 +2169,9 @@ class PlayerAI_full_v1(AbstractPlayer):
         x[5] = len(keepDice)
         hist = np.histogram(keepDice, bins=np.linspace(.5,6.5,7))[0]
         x[6:12] = hist * np.array([1,2,3,4,5,6])
+        x[12] = np.sum(keepDice)
+        for ii in range(1, 6):  # number of single, double, ...
+            x[12 + ii] = len(hist[hist == ii])  # x[13]-x[17]
         return x
     def predict_Ex(self, dice, deciRr):
         """Includes exception handling for direct predict call"""
@@ -2288,7 +2293,46 @@ class PlayerAI_full_v1(AbstractPlayer):
             lp("Best parameters set found on development set:")
             lp(rgr.best_params_)
         
-    def aux_Ex_benchmark(self, n, nMC, seed=None):
+    def aux_Ex_benchmark(self, n, facMC, seed=None):
+        """trains rgrEx separately
+        
+        n : int
+            number of pairs
+        nMC : int
+            number of Monte Carlo trials to verify
+        facMC : float
+            number of Monte Carlo trials / number of possible combinations
+        seed : int
+            random numbers seed
+        """
+        benchmark = []
+        for nn in range(n):
+            diceOld = Dice()
+            deciRr = np.random.choice([True, False], size=5)
+            x = self.encode_Ex(diceOld, deciRr)
+            y = self.rgrEx.predict(x.reshape(1, -1))[0]
+            
+            nMC = int(np.rint(facMC * 6**np.sum(deciRr)))
+            if np.sum(deciRr) == 0:
+                nMC = 1
+            yMC = np.empty(shape=(nMC, 13))
+            for mm in range(nMC):
+                diceNew = diceOld.reroll(deciRr)
+                yMC[mm, :] = self.encode_Ex_y(diceNew)
+            meanMC = np.mean(yMC, axis=0)
+            semMC = np.std(yMC, axis=0, ddof=1) / nMC**.5
+            dist = y - meanMC
+            dist = np.where(abs(dist) <= semMC, 0, dist)
+            dist = np.where(dist > 0, dist-semMC, dist)
+            dist = np.where(dist < 0, dist+semMC, dist)
+            lp(y)
+            lp(meanMC)
+            lp(semMC)
+            lp(dist)
+            
+            benchmark += [np.linalg.norm(y-yMC)]
+        return np.mean(benchmark), np.std(benchmark)
+    def aux_Ex_benchmark_bak(self, n, nMC, seed=None):
         """trains rgrEx separately
         
         n : int
