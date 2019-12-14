@@ -1969,7 +1969,7 @@ class PlayerAI_full_v1(AbstractPlayer):
             rgrRrArgs={'hidden_layer_sizes':(20, 20)},
             rgrExArgs={'activation': 'tanh',
                        'solver': 'adam',
-                       'hidden_layer_sizes':(30, 30),
+                       'hidden_layer_sizes':(30, 40, 40, 30),
                        'max_iter': 1000},
             nGamesPreplayMem=200,
             nGamesPartFit=50,
