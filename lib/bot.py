@@ -21,60 +21,13 @@ from progressbar import progressbar
 #from progress.bar import Bar
 import warnings
 from sklearn.exceptions import ConvergenceWarning, NotFittedError
+from sklearn.utils.validation import check_is_fitted
 from itertools import product
 import pickle
 #from itertools import product
 
 
-#def benchmark(player, nGames=100):
-#    """Benchmarks Yahtzee decision making models.
-#    
-#    Extended description of function.
-#    
-#    Parameters
-#    ----------
-#    fctRoll : function
-#        Classifier for which dice to reroll.
-#        arg1 : ScoreBoard
-#        arg2 : Dice
-#        arg3 : int, 0 or 1
-#            number of reroll attempts so far
-#        returns : bool array of len 5
-#    fctCat : str
-#        Classifier for which categorie to use on the score board for dice.
-#        arg1 : ScoreBoard
-#        arg2 : Dice
-#        returns : 0 <= int <= 12
-#    player : Player
-#        Artificial player, subclass of AbstractPlayer
-#    nGames : int
-#        number of trials
-#    
-#    Returns
-#    -------
-#    scoreMean : float
-#        Description of return value
-#    scoreStd : float
-#        Standard deviation
-#    
-#    See Also
-#    --------
-#    otherfunc : some related other function
-#    
-#    Examples
-#    --------
-#    These are written in doctest format, and should illustrate how to
-#    use the function.
-#    
-#    >>> a=[1,2,3]
-#    >>> [x + 3 for x in a]
-#    [4, 5, 6]
-#    """
-#    scores = []
-#    for ii in range(nGames):
-#        game = Game(player)
-#        scores += [game.sb.getSum()]
-#    return np.mean(scores), np.std(scores)
+
     
 
 class PlayerEnsemble:
@@ -2470,6 +2423,9 @@ class PlayerAI_full_v1(AbstractPlayer):
         >>> [x + 3 for x in a]
         [4, 5, 6]
         """
+        if False and self.nGames == 0:
+            # initiallize rgrEx with some random samples first
+            player.aux_Ex_train(n=100000)
         
         assert 0 <= pOptRr + pRandRr <= 1
         for gg in range(nGames):

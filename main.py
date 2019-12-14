@@ -326,7 +326,7 @@ if __name__== "__main__":
 #    main3_initLearningPlayer()
 #    main4_evaluateModels()
     
-#    main5_trainFullAIPlayer()
+    main5_trainFullAIPlayer()
 #    main6_playAGame()
-    main7_benchmark_v1Ex()
+#    main7_benchmark_v1Ex()
     
