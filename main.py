@@ -159,7 +159,7 @@ def main4_evaluateModels():
 
 
 def main5_trainFullAIPlayer():
-    print('Training Intelligent Player:')
+    lp('Training Intelligent Player:')
     player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame0.pick')
     
     playerFn = (

@@ -2423,9 +2423,9 @@ class PlayerAI_full_v1(AbstractPlayer):
         >>> [x + 3 for x in a]
         [4, 5, 6]
         """
-        if False and self.nGames == 0:
+        if self.nGames == 0:
             # initiallize rgrEx with some random samples first
-            player.aux_Ex_train(n=100000)
+            self.aux_Ex_train(n=100000)
         
         assert 0 <= pOptRr + pRandRr <= 1
         for gg in range(nGames):
