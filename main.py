@@ -197,14 +197,28 @@ def main5_trainFullAIPlayer():
 
 def main6_playAGame():
     print('Check out some games:')
-    player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame3600.pick')
+    player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame1300.pick')
     
-    lp(player.predict_Ex(Dice([5,5,5,5,5]),[True, True, False, False, False]))
-    lp(player.predict_Ex(Dice([1,2,3,4,5]),[True, True, False, True, False]))
+#    lp(player.predict_Ex(Dice([5,5,5,5,5]),[True, True, False, False, False]))
+#    lp(player.predict_Ex(Dice([1,2,3,4,5]),[True, True, False, True, False]))
     
-    for ii in range(3):
+    if False:  # check rgrEx
+        testSets = [[1,2,3], [1,2,3,4], [5,5], [2,2,3,3], [2,2,2,3], [2,2,2,2],
+                        [3,3,3]]
+        for keepDice in testSets:
+            nMiss = 5 - len(keepDice)
+            pred = player.predict_Ex(Dice(keepDice+[5]*nMiss),
+                                     [False]*len(keepDice)+[True]*nMiss)
+            ex, std = ScoreBoard.stat_cat_score(Dice(keepDice))
+            lp('predictions for situation:', str(keepDice))
+            print('\t{:20} {:} {:}'.format('Combination', 'Pred', 'Exact'))
+            for ii in range(13):
+                print('\t{:20} {:.2f} {:.2f}'.format(ScoreBoard.cats[ii], pred[ii], ex[ii]))
+    
+    
+    for ii in range(1):
         game = Game(player)
-        print(game)
+        print(game.__str__(debugLevel=1))
 
 
 def main7_benchmark_v1Ex():

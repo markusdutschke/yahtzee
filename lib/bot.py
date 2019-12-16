@@ -1960,11 +1960,19 @@ class PlayerAI_full_v1(AbstractPlayer):
         
     def choose_reroll(self, scoreBoard, dice, attempt):
         opts = self.eval_options_reroll(scoreBoard, dice, attempt)
-        return opts[0][0], str(opts)
+        info = ''
+        for opt in opts:
+            info += '\t {:15} {:.2f}\n'.format(str(dice.keep(opt[0])), opt[1])
+        return opts[0][0], info
+#        return opts[0][0], str(opts)
     
     def choose_cat(self, scoreBoard, dice):
         opts = self.eval_options_cat(scoreBoard, dice)
-        return opts[0][0], str(opts)
+        info = ''
+        for opt in opts:
+            info += '\t {:15} {:3.2f} {:3.2f} {:3.2f}\n'.format(
+                    ScoreBoard.cats[opt[0]], *opt[1:])
+        return opts[0][0], info
     
     def eval_options_cat(self, scoreBoard, dice):
         """Return a sorted list with the options to choose for cat and
@@ -1975,6 +1983,7 @@ class PlayerAI_full_v1(AbstractPlayer):
 
         for cat in scoreBoard.open_cats():
             score, bonus = scoreBoard.check_points(dice, cat)
+#            assert bonus == 0, str(scoreBoard) + str(dice)
             directReward = score + bonus
             
             # additionally consider the resulting state of the score board
@@ -2073,8 +2082,9 @@ class PlayerAI_full_v1(AbstractPlayer):
         """
         x = np.zeros(shape=(self.nFeat_Rr))
         x[:13] = scoreBoard.mask.astype(int)
-#        x[13:26] = self.predict_Ex(dice, deciRr)
-        x[13:26], _ = ScoreBoard.stat_cat_score(dice)
+        x[13:26] = self.predict_Ex(dice, deciRr)
+        x[13:26] *= x[:13]
+#        x[13:26], _ = ScoreBoard.stat_cat_score(dice.keep(deciRr))
         x[26] = attempt
         x[27] = self.encode_bonus(scoreBoard)
         return x
@@ -2383,7 +2393,7 @@ class PlayerAI_full_v1(AbstractPlayer):
     
     def train(self, nGames,
               pOptCat=.3, pRandCat=0.1, pRatCat=10,
-              pOptRr=.3, pRandRr=0.1, pRatRr=10):
+              pOptRr=.9, pRandRr=0.05, pRatRr=10):
         """Training the Player with nGames and based on the trainers moves.
     
         Extended description of function.
@@ -2424,9 +2434,9 @@ class PlayerAI_full_v1(AbstractPlayer):
         >>> [x + 3 for x in a]
         [4, 5, 6]
         """
-#        if self.nGames == 0:
-#            # initiallize rgrEx with some random samples first
-#            self.aux_Ex_train(n=100000)
+        if self.nGames == 0:
+            # initiallize rgrEx with some random samples first
+            self.aux_Ex_train(n=100000)
         
         assert 0 <= pOptRr + pRandRr <= 1
         for gg in range(nGames):

@@ -394,13 +394,27 @@ class Game:
         
         if debugLevel >= 1:
             for ii in range(13):
-                _str += (
-                        '--\n'
-                        + 'DICE: ' + str(dfLog.loc[ii,'dice2'])
-                        + ';\nEVAL: ' + str(dfLog.loc[ii,'info2'])
-                        + ';\nDECISION: ' + ScoreBoard.cats[dfLog.loc[ii,'deci2']]
-                        )
-                _str += '\n'
+                _str += 'ROUND ' + str(ii) +'\n'
+                _str += 'Dice0: ' + str(dfLog.loc[ii,'dice0']) +'\n'
+                _str += 'Deci0: ' + str(dfLog.loc[ii,'deci0']) +'\n'
+                _str += 'Info0: ' + str(dfLog.loc[ii,'info0']) +'\n'
+                _str += '--\n'
+                _str += 'Dice1: ' + str(dfLog.loc[ii,'dice1']) +'\n'
+                _str += 'Deci1: ' + str(dfLog.loc[ii,'deci1']) +'\n'
+                _str += 'Info1: ' + str(dfLog.loc[ii,'info1']) +'\n'
+                _str += '--\n'
+                _str += 'Dice2: ' + str(dfLog.loc[ii,'dice2']) +'\n'
+                _str += 'Deci2: ' + str(ScoreBoard.cats[dfLog.loc[ii,'deci2']]) +'\n'
+                _str += 'Info2: ' + str(dfLog.loc[ii,'info2']) +'\n'
+                _str += '===============\n'
+#                for jj in range(3):
+#                _str += (
+#                        '--\n'
+#                        + 'DICE: ' + str(dfLog.loc[ii,'dice2'])
+#                        + ';\nEVAL: ' + str(dfLog.loc[ii,'info2'])
+#                        + ';\nDECISION: ' + ScoreBoard.cats[dfLog.loc[ii,'deci2']]
+#                        )
+#                _str += '\n'
         
         dfLog = dfLog.reset_index()
         dfLog =dfLog.set_index('deci2')
