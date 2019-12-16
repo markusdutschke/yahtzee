@@ -2073,7 +2073,8 @@ class PlayerAI_full_v1(AbstractPlayer):
         """
         x = np.zeros(shape=(self.nFeat_Rr))
         x[:13] = scoreBoard.mask.astype(int)
-        x[13:26] = self.predict_Ex(dice, deciRr)
+#        x[13:26] = self.predict_Ex(dice, deciRr)
+        x[13:26], _ = ScoreBoard.stat_cat_score(dice)
         x[26] = attempt
         x[27] = self.encode_bonus(scoreBoard)
         return x
@@ -2423,9 +2424,9 @@ class PlayerAI_full_v1(AbstractPlayer):
         >>> [x + 3 for x in a]
         [4, 5, 6]
         """
-        if self.nGames == 0:
-            # initiallize rgrEx with some random samples first
-            self.aux_Ex_train(n=100000)
+#        if self.nGames == 0:
+#            # initiallize rgrEx with some random samples first
+#            self.aux_Ex_train(n=100000)
         
         assert 0 <= pOptRr + pRandRr <= 1
         for gg in range(nGames):
