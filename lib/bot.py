@@ -10,7 +10,6 @@ from abc import ABC, abstractmethod
 import numpy as np
 import random
 import pandas as pd
-#np.random.seed(0)
 from yahtzee import Game, ScoreBoard, Dice
 from sklearn.neural_network import MLPRegressor
 from sklearn.utils.validation import check_is_fitted
@@ -27,6 +26,74 @@ import pickle
 #from itertools import product
 
 
+def explore_boltzmann(actions, qs, temp=None, minMaxRat=None):
+    """Performing Bolzmann weighing (also called softmax).
+    
+    Each possible action gets a probabilistic weight of exp(q / temp).
+    An action is chosen by those probabilities.
+    This weighting is quite random in the early rounds of a game
+    (all qs similar and high) and very deterministic at the final rounds
+    (qs are small and quite different).
+    
+    Parameters
+        ----------
+    actions : list 
+        actions to choose from. Sorted by corresponding q
+    qs : list of floats
+        same length as actions, cooresponding values of the Q-Function
+    temp : float
+        Boltzmann temperature
+    minMaxRat : float >= 1
+        Probability ratio of the most favorable and the most unfavorable action
+        
+    Returns
+        -------
+    action : one elemt of actions
+    """
+    assert temp is None or minMaxRat is None
+    qs = np.array(qs)
+    if temp is None:
+        assert minMaxRat is not None
+        probs = qs - np.amin(qs)
+        if np.amax(probs) == 0:
+            return np.random.choice(actions)
+        alpha = np.log(minMaxRat)/np.amax(probs)
+        probs = np.exp(alpha*probs)
+    else:
+        probs = np.exp(qs / temp)
+    assert np.isfinite(probs).all(), str(probs) + ';' + str(qs) + '; ' + str(temp)
+#    lp(actions)
+#    lp(weights)
+    return weighted_choice(actions, probs)
+
+
+def explore_epsgreedy(actions, qs, epsilon):
+    """Performing Bolzmann weighing (also called softmax).
+    
+    Each possible action gets a probabilistic weight of exp(q / temp).
+    An action is chosen by those probabilities.
+    This weighting is quite random in the early rounds of a game
+    (all qs similar and high) and very deterministic at the final rounds
+    (qs are small and quite different).
+    
+    Parameters
+        ----------
+    actions : list 
+        actions to choose from. Sorted by corresponding q
+    qs : list of floats
+        same length as actions, cooresponding values of the Q-Function
+    temp : float
+        Boltzmann temperature
+        
+    Returns
+        -------
+    action : one elemt of actions
+    """
+    rndNo = np.random.rand()
+    if rndNo <= epsilon:
+        action = np.random.choice(actions)
+    else:
+        return actions[0]
 
     
 
@@ -2392,8 +2459,13 @@ class PlayerAI_full_v1(AbstractPlayer):
 
     
     def train(self, nGames,
-              pOptCat=.3, pRandCat=0.1, pRatCat=10,
-              pOptRr=.9, pRandRr=0.05, pRatRr=10):
+              expl_cat_fct=explore_boltzmann,
+              expl_cat_params={'temp': 10},
+              expl_rr_fct=explore_boltzmann,
+              expl_rr_params={'temp': 1},
+#              pOptCat=.3, pRandCat=0.1, pRatCat=10,
+#              pOptRr=.9, pRandRr=0.05, pRatRr=10
+              ):
         """Training the Player with nGames and based on the trainers moves.
     
         Extended description of function.
@@ -2438,7 +2510,7 @@ class PlayerAI_full_v1(AbstractPlayer):
             # initiallize rgrEx with some random samples first
             self.aux_Ex_train(n=100000)
         
-        assert 0 <= pOptRr + pRandRr <= 1
+#        assert 0 <= pOptRr + pRandRr <= 1
         for gg in range(nGames):
             np.random.seed(self.nGames)
             if self.nGames == 0:
@@ -2446,56 +2518,69 @@ class PlayerAI_full_v1(AbstractPlayer):
             else:
                 def fct_choose_reroll(scoreBoard, dice, attempt):
                     sb = scoreBoard
-                    rndNo = np.random.rand()
                     info = ''
-                    if rndNo < pRandRr:
-                        reroll = np.random.choice([True, False], size=5)
-                        info = 'random'
-                    elif pRatRr is None or rndNo < pRandRr+pOptRr:
-                        reroll, info = self.choose_reroll(sb, dice, attempt)
-                        info = 'optimal: ' + info
-                    else:
-                        opts = self.eval_options_reroll(sb, dice, attempt)
-                        cs = [opt[0] for opt in opts]
-                        ws = [opt[1] for opt in opts]
-                        ws = np.array(ws) - np.amin(ws)
-                        if np.amax(ws) > 0:
-                            alpha = np.log(pRatRr)/np.amax(ws)
-                            ws = np.exp(alpha*ws)
-                            assert np.amin(ws) == 1
-                            reroll = weighted_choice(cs, ws)
-                            info = 'weighted: ' + str(opts)
-                        else:
-                            # all options are weighted equal
-                            reroll = np.random.choice([True, False], size=5)
-                            info = 'weighted->random: ' + str(opts)
+                    
+                    opts = self.eval_options_reroll(sb, dice, attempt)
+                    actions = [opt[0] for opt in opts]
+                    qs = [opt[1] for opt in opts]
+                    reroll = expl_rr_fct(actions, qs, **expl_rr_params)
+                    
+#                    rndNo = np.random.rand()
+#                    if rndNo < pRandRr:
+#                        reroll = np.random.choice([True, False], size=5)
+#                        info = 'random'
+#                    elif pRatRr is None or rndNo < pRandRr+pOptRr:
+#                        reroll, info = self.choose_reroll(sb, dice, attempt)
+#                        info = 'optimal: ' + info
+#                    else:
+#                        opts = self.eval_options_reroll(sb, dice, attempt)
+#                        cs = [opt[0] for opt in opts]
+#                        ws = [opt[1] for opt in opts]
+#                        ws = np.array(ws) - np.amin(ws)
+#                        if np.amax(ws) > 0:
+#                            alpha = np.log(pRatRr)/np.amax(ws)
+#                            ws = np.exp(alpha*ws)
+#                            assert np.amin(ws) == 1
+#                            reroll = weighted_choice(cs, ws)
+#                            info = 'weighted: ' + str(opts)
+#                        else:
+#                            # all options are weighted equal
+#                            reroll = np.random.choice([True, False], size=5)
+#                            info = 'weighted->random: ' + str(opts)
                     return reroll, info
                 
                 def fct_choose_cat(scoreBoard, dice):
                     sb = scoreBoard
-                    rndNo = np.random.rand()
                     info = ''
-                    if rndNo < pRandCat:
-                        info = 'random'
-                        cat = np.random.choice(sb.open_cats())
-                    elif pRatCat is None or rndNo < pRandCat+pOptCat:
-                        
-                        cat, info = self.choose_cat(sb, dice)
-                        info = 'optimal: ' + info
-                    else:
-                        opts = self.eval_options_cat(sb, dice)
-                        cs = [opt[0] for opt in opts]
-                        ws = [opt[1] for opt in opts]
-                        ws = np.array(ws) - np.amin(ws)
-                        if np.amax(ws) > 0:
-                            info = 'weighted: ' + str(opts)
-                            alpha = np.log(pRatCat)/np.amax(ws)
-                            ws = np.exp(alpha*ws)
-                            cat = weighted_choice(cs, ws)
-                        else:
-                            info = 'weighted->random: ' + str(opts)
-                            # all options are weighted equal
-                            cat = np.random.choice(sb.open_cats())
+                    
+                    opts = self.eval_options_cat(sb, dice)
+#                    opts = np.array(opts)
+                    actions = [opt[0] for opt in opts]
+                    qs = [opt[1] for opt in opts]
+                    cat = expl_cat_fct(actions, qs, **expl_cat_params)
+                    
+#                    rndNo = np.random.rand()
+#                    if rndNo < pRandCat:
+#                        info = 'random'
+#                        cat = np.random.choice(sb.open_cats())
+#                    elif pRatCat is None or rndNo < pRandCat+pOptCat:
+#                        
+#                        cat, info = self.choose_cat(sb, dice)
+#                        info = 'optimal: ' + info
+#                    else:
+#                        opts = self.eval_options_cat(sb, dice)
+#                        cs = [opt[0] for opt in opts]
+#                        ws = [opt[1] for opt in opts]
+#                        ws = np.array(ws) - np.amin(ws)
+#                        if np.amax(ws) > 0:
+#                            info = 'weighted: ' + str(opts)
+#                            alpha = np.log(pRatCat)/np.amax(ws)
+#                            ws = np.exp(alpha*ws)
+#                            cat = weighted_choice(cs, ws)
+#                        else:
+#                            info = 'weighted->random: ' + str(opts)
+#                            # all options are weighted equal
+#                            cat = np.random.choice(sb.open_cats())
                     return cat, info
 
                 tmpPlayer = PlayerTemporary(
@@ -2566,3 +2651,5 @@ class PlayerAI_full_v1(AbstractPlayer):
         else:
             self.__dict__.update(player.__dict__)
             print('Loaded player from file:', filename)
+            
+

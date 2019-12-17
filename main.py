@@ -12,6 +12,7 @@ from comfct.debug import lp
 from yahtzee import Dice, ScoreBoard, Game
 from sklearn.neural_network import MLPRegressor
 import bot
+import datetime as dt
 
 # Benchmark games should not overlap with training games
 BENCHMARK_SEED = 618225912
@@ -165,6 +166,7 @@ def main5_trainFullAIPlayer():
     playerFn = (
             lambda it: './tmp/{:}-nGame{:d}.pick'
             .format(player.name, it))
+    mmax = 0
     
 #    loadIter = 0  # 0: OFF
 #    try:
@@ -187,8 +189,11 @@ def main5_trainFullAIPlayer():
             continue
         player.train(nGames=nT-player.nGames)
         m, s = player.benchmark(seed=BENCHMARK_SEED)
+        mmax = max(m, mmax)
         name = player.name + ' ('+str(player.nGames) + ' games)'
-        lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
+        strTime = dt.datetime.now().strftime('%H:%M')
+        print('\t{:5} {:35} {:.1f} +/- {:.1f}\tmax: {:.1f}'
+              .format(strTime, name+':', m, s, mmax))
         
         player.save(playerFn(player.nGames))
         
@@ -197,7 +202,7 @@ def main5_trainFullAIPlayer():
 
 def main6_playAGame():
     print('Check out some games:')
-    player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame1300.pick')
+    player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame5900.pick')
     
 #    lp(player.predict_Ex(Dice([5,5,5,5,5]),[True, True, False, False, False]))
 #    lp(player.predict_Ex(Dice([1,2,3,4,5]),[True, True, False, True, False]))
@@ -215,7 +220,7 @@ def main6_playAGame():
             for ii in range(13):
                 print('\t{:20} {:.2f} {:.2f}'.format(ScoreBoard.cats[ii], pred[ii], ex[ii]))
     
-    
+    np.random.seed(1)
     for ii in range(1):
         game = Game(player)
         print(game.__str__(debugLevel=1))

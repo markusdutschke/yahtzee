@@ -12,8 +12,13 @@ from comfct.debug import lp
 
 def weighted_choice(items, weights):
     assert len(items) == len(weights)
+    assert (np.array(weights) >= 0).all()
+    assert np.isfinite(weights).all(), str(weights)
     wSum = np.sum(weights)
-    ws = [w/wSum for w in weights]
+    if wSum == 0:
+        ws = [1 for w in weights]
+    else:
+        ws = [w/wSum for w in weights]
     
     #works for items being list of lsits
     inds = list(range(len(items)))
