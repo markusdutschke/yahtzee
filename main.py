@@ -192,7 +192,7 @@ def main5_trainFullAIPlayer():
         mmax = max(m, mmax)
         name = player.name + ' ('+str(player.nGames) + ' games)'
         strTime = dt.datetime.now().strftime('%H:%M')
-        print('\t{:5} {:35} {:.1f} +/- {:.1f}\tmax: {:.1f}'
+        print('\t{:5}   {:32} {:.1f} +/- {:.1f}\tmax: {:.1f}'
               .format(strTime, name+':', m, s, mmax))
         
         player.save(playerFn(player.nGames))

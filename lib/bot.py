@@ -1985,7 +1985,8 @@ class PlayerAI_full_v1(AbstractPlayer):
     name = 'PlayerAI_full_v1'
     def __init__(
             self,
-            rgrSCArgs={'hidden_layer_sizes':(20, 10)},
+#            rgrSCArgs={'hidden_layer_sizes':(20, 10)},
+            rgrSCArgs={'hidden_layer_sizes':(40, 40)},
             rgrRrArgs={'hidden_layer_sizes':(20, 20)},
             rgrExArgs={'activation': 'tanh',
                        'solver': 'adam',
