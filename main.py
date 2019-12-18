@@ -270,7 +270,24 @@ def demo():
           'Lets first have a look at the final performance of the trained AI:'
           + '\n' + '='*80)
     print()
-    print('A view benchmarks (check papers in README):')
+    
+    print('AI-Players created by Markus Dutschke:')
+    print()
+    print('\t{:50} {:}'.format('Description', 'avg. Score'))
+    print('\t' + '-'*80)
+    lstPlayers = []
+    lstPlayers += [
+            bot.PlayerAI_full_v0(
+                    fn='./trainedBots/PlayerAI_full_v0-nGame1053.pick'),
+            bot.PlayerAI_full_v1(
+                    fn='./trainedBots/PlayerAI_full_v1-nGame900.pick'),
+                    ]
+    for player in lstPlayers:
+        m, s = player.benchmark(seed=BENCHMARK_SEED)
+        print('\t{:50} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
+    print()
+    
+    print('A view benchmarks for comparison (check papers in README):')
     print()
     print('\t{:50} {:}'.format('Description', 'avg. Score'))
     print('\t' + '-'*80)
@@ -279,17 +296,10 @@ def demo():
     print('\t{:50} {:.1f}'.format('Greedy (Glenn06):', 218.05))
     print('\t{:50} {:.1f}'.format('Greedy (Felldin):', 221.68))
     print('\t{:50} {:.1f}'.format('Optimal Strategy (Holderied):', 245.9))
-    print()
+    print('\t{:50} {:.1f}'.format('Experienced human trials (self produced):', 239.5))
     
-    print('Benchmark: AI-Players')
-    lstPlayers = []
-    lstPlayers += [
-            bot.PlayerAI_full_v0(
-                    fn='./trainedBots/PlayerAI_full_v0-nGame1053.pick'),
-                    ]
-    for player in lstPlayers:
-        m, s = player.benchmark(seed=BENCHMARK_SEED)
-        print('\t{:50} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
+    
+
     
     print()
     print()
@@ -300,7 +310,9 @@ def demo():
           + '\n' + '='*80)
     print()
     player = lstPlayers[-1]
-    for ii in range(3):
+    seeds = [1,4,19]
+    for ii in range(len(seeds)):
+        np.random.seed(seeds[ii])
         game = Game(player)
         print(game)
     print()
@@ -308,15 +320,15 @@ def demo():
     
     
     print('='*80 + '\n' +
-          'Now we see how such a cool AI player is trained ...'
+          'Now, let\'s see how such a cool AI player is trained ...'
           + '\n' + '='*80)
     print()
-    print('The training + benchmarks takes a about 80 minutes')
-    player = bot.PlayerAI_full_v0()
+    print('Note: training + benchmarks takes a few hours')
+    player = bot.PlayerAI_full_v1()
     nGames = (
             [1, 2, 3, 4]
             + [10, 20, 30, 40, 50, 60, 70, 80, 90]
-            + [100, 200, 500, 1000, 1053]
+            + [100, 200, 300, 400, 500, 600, 700, 800, 900]
             )
     print()
     print('\t{:20} {:}'.format('# Trainings', 'Score'))
@@ -329,7 +341,7 @@ def demo():
 #        name = player.name + ' ('+str(player.nGames) + ' games)'
 #        lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
         print('\t{:20} {:.1f} +/- {:.1f}'.format(str(player.nGames), m, s))
-    player.save('./trainedBots/PlayerAI_full_v0-nGame1053-2.pick')
+    player.save('./trainedBots/PlayerAI_full_v1-nGame900-2.pick')
         
 #        player.save(playerFn(player.nGames))
 #        
@@ -338,14 +350,14 @@ def demo():
 
 if __name__== "__main__":
     np.random.seed(0)
-#    demo()
+    demo()
     
 #    main1_playARandomGame()
 #    main2_simpleBenchmark()
 #    main3_initLearningPlayer()
 #    main4_evaluateModels()
     
-    main5_trainFullAIPlayer()
+#    main5_trainFullAIPlayer()
 #    main6_playAGame()
 #    main7_benchmark_v1Ex()
     

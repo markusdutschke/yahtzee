@@ -2647,10 +2647,10 @@ class PlayerAI_full_v1(AbstractPlayer):
         try:
             player = pickle.load(open(filename, "rb"))
         except FileNotFoundError:
-            print('Coluld not loaded player! File:', filename, 'not found!')
+#            print('Coluld not loaded player! File:', filename, 'not found!')
             return
         else:
             self.__dict__.update(player.__dict__)
-            print('Loaded player from file:', filename)
+#            print('Loaded player from file:', filename)
             
 
