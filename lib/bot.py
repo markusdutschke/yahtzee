@@ -1987,7 +1987,8 @@ class PlayerAI_full_v1(AbstractPlayer):
             self,
 #            rgrSCArgs={'hidden_layer_sizes':(20, 10)},
             rgrSCArgs={'hidden_layer_sizes':(40, 40)},
-            rgrRrArgs={'hidden_layer_sizes':(20, 20)},
+#            rgrRrArgs={'hidden_layer_sizes':(20, 20)},
+            rgrRrArgs={'hidden_layer_sizes':(40, 40)},
             rgrExArgs={'activation': 'tanh',
                        'solver': 'adam',
                        'hidden_layer_sizes':(30, 40, 40, 30),
@@ -2509,6 +2510,7 @@ class PlayerAI_full_v1(AbstractPlayer):
         """
         if self.nGames == 0:
             # initiallize rgrEx with some random samples first
+            np.random.seed(self.nGames)
             self.aux_Ex_train(n=100000)
         
 #        assert 0 <= pOptRr + pRandRr <= 1

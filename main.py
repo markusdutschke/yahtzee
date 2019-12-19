@@ -350,14 +350,14 @@ def demo():
 
 if __name__== "__main__":
     np.random.seed(0)
-    demo()
+#    demo()
     
 #    main1_playARandomGame()
 #    main2_simpleBenchmark()
 #    main3_initLearningPlayer()
 #    main4_evaluateModels()
     
-#    main5_trainFullAIPlayer()
+    main5_trainFullAIPlayer()
 #    main6_playAGame()
 #    main7_benchmark_v1Ex()
     
