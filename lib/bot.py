@@ -1986,16 +1986,16 @@ class PlayerAI_full_v1(AbstractPlayer):
     def __init__(
             self,
 #            rgrSCArgs={'hidden_layer_sizes':(20, 10)},
-            rgrSCArgs={'hidden_layer_sizes':(40, 40)},
-#            rgrRrArgs={'hidden_layer_sizes':(20, 20)},
-            rgrRrArgs={'hidden_layer_sizes':(40, 40)},
+            rgrSCArgs={'hidden_layer_sizes':(40, 40), 'max_iter': 1000},
+            rgrRrArgs={'hidden_layer_sizes':(20, 20), 'max_iter': 1000},
+#            rgrRrArgs={'hidden_layer_sizes':(40, 40)},
             rgrExArgs={'activation': 'tanh',
                        'solver': 'adam',
                        'hidden_layer_sizes':(30, 40, 40, 30),
                        'max_iter': 1000},
             nGamesPreplayMem=200,
             nGamesPartFit=50,
-            nRepPartFit=5,
+#            nRepPartFit=5,
             gamma=1,
             fn=None):
         """
@@ -2018,7 +2018,7 @@ class PlayerAI_full_v1(AbstractPlayer):
         self.repMemEx = []
         self.nGamesPreplayMem = nGamesPreplayMem
         self.nGamesPartFit = nGamesPartFit
-        self.nRepPartFit = nRepPartFit
+#        self.nRepPartFit = nRepPartFit
         self.gamma = gamma
         self.nGames = 0
         
@@ -2462,7 +2462,7 @@ class PlayerAI_full_v1(AbstractPlayer):
     
     def train(self, nGames,
               expl_cat_fct=explore_boltzmann,
-              expl_cat_params={'temp': 10},
+              expl_cat_params={'minMaxRat': 100},
               expl_rr_fct=explore_boltzmann,
               expl_rr_params={'minMaxRat': 100},
 #              pOptCat=.3, pRandCat=0.1, pRatCat=10,
