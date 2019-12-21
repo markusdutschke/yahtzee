@@ -161,7 +161,7 @@ def main4_evaluateModels():
 
 def main5_trainFullAIPlayer():
     lp('Training Intelligent Player:')
-    player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame6200.pick')
+    player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame9900.pick')
     
     playerFn = (
             lambda it: './tmp/{:}-nGame{:d}.pick'
@@ -182,7 +182,7 @@ def main5_trainFullAIPlayer():
     
     nGames = list(range(0,10000,100))
     nGames = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100, 200, 500, 1000, 1053] # + list(range(900,1400,1))
-    nGames = list(range(0,100,10)) + list(range(100,10000,100))
+    nGames = list(range(0,100,10)) + list(range(100,20000,100))
     for nT in nGames:
         nT = int(nT)
         if nT<=player.nGames:
@@ -263,7 +263,30 @@ def main7_benchmark_v1Ex():
         print()
         print()
 
-
+def todo():
+    print('Lets list some todos here, to improve this code even further'
+          'or just to check out some ideas')
+    print(
+"""
+- try out some bonus encoding:
+    The question is a bit how. If it encodes a clear recommendation to MLPrgr
+    it should be exact! Maybe try the absolute upper some and some fancy
+    encoded bonus as redundant information.
+- set gamma=0.98 and test.
+    No idea, what this is going to help, but it is done in literature,
+    so it cant hurt much here. One should evaluate the bene/male-fit carefully.
+- implement some exploartion strategy with is increasing the minMaxRatio with a
+    higher score. Just like: 
+        minMaxRatio = avgQ /220 * 1000
+    or even:
+        minMaxRatio = exp(avgQ /220) * 1000
+    Use this as a separate exploration strategy. This is too far from softmax.
+- Use bolzmann / metropolis-hastings updates for iterations of 100 training games.
+    If the benchmark is better afterwards update regressors 
+    otherwise maybe update regressors (according to some Boltzmann probability)
+    This might work pretty well in this case, as the is a lot of randomness
+    involved. For the Atari game benchmark this would fail, totally!
+""")
 
 def demo():
     print('='*80 + '\n' +
