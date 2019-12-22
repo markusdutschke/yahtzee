@@ -161,7 +161,7 @@ def main4_evaluateModels():
 
 def main5_trainFullAIPlayer():
     lp('Training Intelligent Player:')
-    player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame9900.pick')
+    player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame11000.pick')
     
     playerFn = (
             lambda it: './tmp/{:}-nGame{:d}.pick'
