@@ -2462,9 +2462,9 @@ class PlayerAI_full_v1(AbstractPlayer):
     
     def train(self, nGames,
               expl_cat_fct=explore_boltzmann,
-              expl_cat_params={'minMaxRat': 1000},
+              expl_cat_params={'minMaxRat': 5000},
               expl_rr_fct=explore_boltzmann,
-              expl_rr_params={'minMaxRat': 10000},
+              expl_rr_params={'minMaxRat': 50000},
 #              pOptCat=.3, pRandCat=0.1, pRatCat=10,
 #              pOptRr=.9, pRandRr=0.05, pRatRr=10
               ):
