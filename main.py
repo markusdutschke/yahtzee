@@ -351,7 +351,7 @@ def demo():
     nGames = (
             [1, 2, 3, 4]
             + [10, 20, 30, 40, 50, 60, 70, 80, 90]
-            + [100, 200, 300, 400, 500, 600, 700, 800, 900]
+            + list(range(100,25000,100))
             )
     print()
     print('\t{:20} {:}'.format('# Trainings', 'Score'))
@@ -373,14 +373,14 @@ def demo():
 
 if __name__== "__main__":
     np.random.seed(0)
-#    demo()
+    demo()
     
 #    main1_playARandomGame()
 #    main2_simpleBenchmark()
 #    main3_initLearningPlayer()
 #    main4_evaluateModels()
     
-    main5_trainFullAIPlayer()
+#    main5_trainFullAIPlayer()
 #    main6_playAGame()
 #    main7_benchmark_v1Ex()
     
