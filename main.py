@@ -303,12 +303,12 @@ def demo():
             bot.PlayerAI_full_v0(
                     fn='./trainedBots/PlayerAI_full_v0-nGame1053.pick'),
             bot.PlayerAI_full_v1(
-                    fn='./trainedBots/PlayerAI_full_v1-nGame900.pick'),
+                    fn='./trainedBots/PlayerAI_full_v1-nGame5700.pick'),
                     ]
-    for player in lstPlayers:
-        m, s = player.benchmark(seed=BENCHMARK_SEED)
-        print('\t{:50} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
-    print()
+#    for player in lstPlayers:
+#        m, s = player.benchmark(seed=BENCHMARK_SEED)
+#        print('\t{:50} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
+#    print()
     
     print('A view benchmarks for comparison (check papers in README):')
     print()
@@ -333,7 +333,7 @@ def demo():
           + '\n' + '='*80)
     print()
     player = lstPlayers[-1]
-    seeds = [1,4,19]
+    seeds = [1, 3, 6]
     for ii in range(len(seeds)):
         np.random.seed(seeds[ii])
         game = Game(player)
@@ -351,7 +351,7 @@ def demo():
     nGames = (
             [1, 2, 3, 4]
             + [10, 20, 30, 40, 50, 60, 70, 80, 90]
-            + list(range(100,25000,100))
+            + list(range(100,5701,100))
             )
     print()
     print('\t{:20} {:}'.format('# Trainings', 'Score'))
@@ -364,7 +364,7 @@ def demo():
 #        name = player.name + ' ('+str(player.nGames) + ' games)'
 #        lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
         print('\t{:20} {:.1f} +/- {:.1f}'.format(str(player.nGames), m, s))
-    player.save('./trainedBots/PlayerAI_full_v1-nGame900-2.pick')
+    player.save('./trainedBots/PlayerAI_full_v1-nGame5700-2.pick')
         
 #        player.save(playerFn(player.nGames))
 #        
