@@ -305,10 +305,10 @@ def demo():
             bot.PlayerAI_full_v1(
                     fn='./trainedBots/PlayerAI_full_v1-nGame5700.pick'),
                     ]
-#    for player in lstPlayers:
-#        m, s = player.benchmark(seed=BENCHMARK_SEED)
-#        print('\t{:50} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
-#    print()
+    for player in lstPlayers:
+        m, s = player.benchmark(seed=BENCHMARK_SEED)
+        print('\t{:50} {:.1f} +/- {:.1f}'.format(player.name+':', m, s))
+    print()
     
     print('A view benchmarks for comparison (check papers in README):')
     print()
@@ -319,7 +319,9 @@ def demo():
     print('\t{:50} {:.1f}'.format('Greedy (Glenn06):', 218.05))
     print('\t{:50} {:.1f}'.format('Greedy (Felldin):', 221.68))
     print('\t{:50} {:.1f}'.format('Optimal Strategy (Holderied):', 245.9))
-    print('\t{:50} {:.1f}'.format('Experienced human trials (self produced):', 239.5))
+    print()
+    print('\t{:50} {:.1f}'.format('Human trials, group 1, 26 games:', 239.5))
+    print('\t{:50} {:.1f}'.format('Human trials, group 2, 8 games:', 202.8))
     
     
 
