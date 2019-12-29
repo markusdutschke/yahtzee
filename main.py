@@ -13,6 +13,7 @@ from yahtzee import Dice, ScoreBoard, Game
 from sklearn.neural_network import MLPRegressor
 import bot
 import datetime as dt
+import pickle
 
 # Benchmark games should not overlap with training games
 BENCHMARK_SEED = 618225912
@@ -161,33 +162,21 @@ def main4_evaluateModels():
 
 def main5_trainFullAIPlayer():
     lp('Training Intelligent Player:')
-    player = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame19900.pick')
+    player = bot.PlayerAI_full_v2(fn='./tmp/PlayerAI_full_v2-nGame0.pick')
     
     playerFn = (
             lambda it: './tmp/{:}-nGame{:d}.pick'
             .format(player.name, it))
     mmax = 0
-    
-#    loadIter = 0  # 0: OFF
-#    try:
-#        player.load(playerFn(loadIter))
-#    except FileNotFoundError:
-#        print('No player model saved. Starting Training from zero ...')
-#    else:
-#        print('Loaded player from file:', playerFn(loadIter))
-#        m, s = player.benchmark(seed=None)
-#        name = player.name + ' ('+str(player.nGames) + ' games)'
-#        lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
+
     
     
-    nGames = list(range(0,10000,100))
-    nGames = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100, 200, 500, 1000, 1053] # + list(range(900,1400,1))
     nGames = list(range(0,100,10)) + list(range(100,50000,100))
     for nT in nGames:
         nT = int(nT)
         if nT<=player.nGames:
             continue
-        player.train(nGames=nT-player.nGames)
+        player.train(nGames=nT-player.nGames, benchmarkSeed=BENCHMARK_SEED)
         m, s = player.benchmark(seed=BENCHMARK_SEED)
         mmax = max(m, mmax)
         name = player.name + ' ('+str(player.nGames) + ' games)'
@@ -197,7 +186,6 @@ def main5_trainFullAIPlayer():
         
         player.save(playerFn(player.nGames))
         
-#        assert m < 200, 'Found nice result'
 
 
 def main6_playAGame():
@@ -263,6 +251,102 @@ def main7_benchmark_v1Ex():
         print()
         print()
 
+def main8_findMemLeak():
+    
+    def sizeKb(obj):
+        return len(pickle.dumps(obj))/1024
+    
+    def sizeKbAttrs(obj):
+        dct = {}
+        for att in obj.__dict__.keys():
+            dct[att] = sizeKb(obj.__dict__[att])
+        return dct
+    
+    def inspect(obj):
+        dct = sizeKbAttrs(obj)
+        _str = ''
+        for att in dct.keys():
+            _str += '{:}: {:.2f}\n'.format(att, dct[att])
+        return _str
+#        return obj.__dict__
+#        dct = {}
+#        for att in obj.__dict__.keys():
+##            lp(att, type(att))
+##            lp(obj.n_iter_)
+##            try:
+#            dct[att] = sizeKb(obj.__dict__[att])
+##            except:
+##                pass
+#        return dct
+    
+#    player1 = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame100.pick')
+#    player2 = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame1000.pick')
+#    player3 = bot.PlayerAI_full_v1(fn='./tmp/PlayerAI_full_v1-nGame10000.pick')
+##    lp(sys.getsizeof(player1), sys.getsizeof(player2))
+##    lp(sys.getsizeof(player1.rgrSC), sys.getsizeof(player2.rgrSC))
+##    lp(sys.getsizeof(player1.repMemRr), sys.getsizeof(player2.repMemRr))
+#    
+#    lp(sizeKb(player1.rgrSC), sizeKb(player2.rgrSC), sizeKb(player3.rgrSC))
+#    lp(sizeKb(player1.repMemSC), sizeKb(player2.repMemSC), sizeKb(player3.repMemSC))
+#    lp(sizeKb(player1.rgrEx), sizeKb(player2.rgrEx), sizeKb(player3.rgrEx))
+#    lp(sizeKb(player1.repMemEx), sizeKb(player2.repMemEx), sizeKb(player3.repMemEx))
+
+    lp('main8_findMemLeak')
+    player = bot.PlayerAI_full_v1()
+    nGames = [2, 3, 30, 40, 50, 100, 200, 300, 400]
+    for nT in nGames:
+        nT = int(nT)
+        if nT<=player.nGames:
+            continue
+        player.train(nGames=nT-player.nGames)
+        
+        player.save('./tmp/test'+str(nT)+'.pick')
+        
+        a, b = sizeKb(player.rgrSC), sizeKb(player.rgrSC.loss_curve_)
+        lp('{:d} games, {:.2f}, {:.2f}, {:.2f}'.format(player.nGames, a, b, a-b))
+        lp(player.rgrSC.loss_curve_)
+        lp(inspect(player.rgrSC))
+        
+def main9_rapidPrototype():
+    lp('Training Intelligent Player:')
+    player = bot.PlayerAI_full_v2(fn='./tmp/PlayerAI_full_v2-nGame0.pick')
+    
+    playerFn = (
+            lambda it: './tmp/{:}-nGame{:d}.pick'
+            .format(player.name, it))
+    mmax = 0
+    
+#    loadIter = 0  # 0: OFF
+#    try:
+#        player.load(playerFn(loadIter))
+#    except FileNotFoundError:
+#        print('No player model saved. Starting Training from zero ...')
+#    else:
+#        print('Loaded player from file:', playerFn(loadIter))
+#        m, s = player.benchmark(seed=None)
+#        name = player.name + ' ('+str(player.nGames) + ' games)'
+#        lp('\t{:50} {:.1f} +/- {:.1f}'.format(name+':', m, s))
+    
+    
+    nGames = [1,2,3,4,5]
+    for nT in nGames:
+        nT = int(nT)
+        if nT<=player.nGames:
+            continue
+        player.train(nGames=nT-player.nGames, benchmarkSeed=BENCHMARK_SEED)
+#        m, s = player.benchmark(seed=BENCHMARK_SEED, nGames=10, nBins=10)
+        m, s = player.benchmark(seed=BENCHMARK_SEED)
+        mmax = max(m, mmax)
+        name = player.name + ' ('+str(player.nGames) + ' games)'
+        strTime = dt.datetime.now().strftime('%H:%M')
+        print('\t{:5}   {:32} {:.1f} +/- {:.1f}\tmax: {:.1f}'
+              .format(strTime, name+':', m, s, mmax))
+        
+#        player.save(playerFn(player.nGames))
+        
+#        assert m < 200, 'Found nice result'
+        
+
 def todo():
     print('Lets list some todos here, to improve this code even further'
           'or just to check out some ideas')
@@ -286,6 +370,8 @@ def todo():
     otherwise maybe update regressors (according to some Boltzmann probability)
     This might work pretty well in this case, as the is a lot of randomness
     involved. For the Atari game benchmark this would fail, totally!
+
+#- switch on pre-training, increase replaz Mem size
 """)
 
 def demo():
@@ -375,14 +461,16 @@ def demo():
 
 if __name__== "__main__":
     np.random.seed(0)
-    demo()
+#    demo()
     
 #    main1_playARandomGame()
 #    main2_simpleBenchmark()
 #    main3_initLearningPlayer()
 #    main4_evaluateModels()
     
-#    main5_trainFullAIPlayer()
+    main5_trainFullAIPlayer()
 #    main6_playAGame()
 #    main7_benchmark_v1Ex()
+#    main8_findMemLeak()
+#    main9_rapidPrototype()
     

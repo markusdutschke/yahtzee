@@ -23,6 +23,7 @@ from sklearn.exceptions import ConvergenceWarning, NotFittedError
 from sklearn.utils.validation import check_is_fitted
 from itertools import product
 import pickle
+from copy import deepcopy
 #from itertools import product
 
 
@@ -1993,9 +1994,10 @@ class PlayerAI_full_v1(AbstractPlayer):
                        'solver': 'adam',
                        'hidden_layer_sizes':(30, 40, 40, 30),
                        'max_iter': 1000},
+#            nGamesPreplayMem=10,
+#            nGamesPartFit=10,
             nGamesPreplayMem=200,
             nGamesPartFit=50,
-#            nRepPartFit=5,
             gamma=1,
             fn=None):
         """
@@ -2528,28 +2530,6 @@ class PlayerAI_full_v1(AbstractPlayer):
                     qs = [opt[1] for opt in opts]
                     reroll = expl_rr_fct(actions, qs, **expl_rr_params)
                     
-#                    rndNo = np.random.rand()
-#                    if rndNo < pRandRr:
-#                        reroll = np.random.choice([True, False], size=5)
-#                        info = 'random'
-#                    elif pRatRr is None or rndNo < pRandRr+pOptRr:
-#                        reroll, info = self.choose_reroll(sb, dice, attempt)
-#                        info = 'optimal: ' + info
-#                    else:
-#                        opts = self.eval_options_reroll(sb, dice, attempt)
-#                        cs = [opt[0] for opt in opts]
-#                        ws = [opt[1] for opt in opts]
-#                        ws = np.array(ws) - np.amin(ws)
-#                        if np.amax(ws) > 0:
-#                            alpha = np.log(pRatRr)/np.amax(ws)
-#                            ws = np.exp(alpha*ws)
-#                            assert np.amin(ws) == 1
-#                            reroll = weighted_choice(cs, ws)
-#                            info = 'weighted: ' + str(opts)
-#                        else:
-#                            # all options are weighted equal
-#                            reroll = np.random.choice([True, False], size=5)
-#                            info = 'weighted->random: ' + str(opts)
                     return reroll, info
                 
                 def fct_choose_cat(scoreBoard, dice):
@@ -2562,28 +2542,6 @@ class PlayerAI_full_v1(AbstractPlayer):
                     qs = [opt[1] for opt in opts]
                     cat = expl_cat_fct(actions, qs, **expl_cat_params)
                     
-#                    rndNo = np.random.rand()
-#                    if rndNo < pRandCat:
-#                        info = 'random'
-#                        cat = np.random.choice(sb.open_cats())
-#                    elif pRatCat is None or rndNo < pRandCat+pOptCat:
-#                        
-#                        cat, info = self.choose_cat(sb, dice)
-#                        info = 'optimal: ' + info
-#                    else:
-#                        opts = self.eval_options_cat(sb, dice)
-#                        cs = [opt[0] for opt in opts]
-#                        ws = [opt[1] for opt in opts]
-#                        ws = np.array(ws) - np.amin(ws)
-#                        if np.amax(ws) > 0:
-#                            info = 'weighted: ' + str(opts)
-#                            alpha = np.log(pRatCat)/np.amax(ws)
-#                            ws = np.exp(alpha*ws)
-#                            cat = weighted_choice(cs, ws)
-#                        else:
-#                            info = 'weighted->random: ' + str(opts)
-#                            # all options are weighted equal
-#                            cat = np.random.choice(sb.open_cats())
                     return cat, info
 
                 tmpPlayer = PlayerTemporary(
@@ -2606,7 +2564,669 @@ class PlayerAI_full_v1(AbstractPlayer):
                 X[nn, :], y[nn] = self.repMemSC_xy(ind)
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=ConvergenceWarning)
+#                self.rgrSC = self.rgrSC.partial_fit(X, y)
+                self.rgrSC.partial_fit(X, y)
+            
+            #rgrEx
+            n_samples = self.nGamesPartFit * 26
+            X = np.empty(shape=(n_samples, self.nFeat_Ex))
+            y = np.empty(shape=(n_samples, 13))
+            allInds = list(range(len(self.repMemEx)))
+            replace=False
+            if len(allInds) < n_samples:
+                replace = True
+            inds = np.random.choice(allInds, size=n_samples, replace=replace)
+            for nn, ind in enumerate(inds):
+                X[nn, :], y[nn, :] = self.repMemEx_xy(ind)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=ConvergenceWarning)
+#                self.rgrEx = self.rgrEx.partial_fit(X, y)
+                self.rgrEx.partial_fit(X, y)
+            
+            #rgrRr
+            n_samples = self.nGamesPartFit * 26
+            X = np.empty(shape=(n_samples, self.nFeat_Rr))
+            y = np.empty(shape=(n_samples,))
+            allInds = list(range(len(self.repMemRr)))
+            replace=False
+            if len(allInds) < n_samples:
+                replace = True
+            inds = np.random.choice(allInds, size=n_samples, replace=replace)
+            for nn, ind in enumerate(inds):
+                X[nn, :], y[nn] = self.repMemRr_xy(ind)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=ConvergenceWarning)
+#                self.rgrRr = self.rgrRr.partial_fit(X, y)
+                self.rgrRr.partial_fit(X, y)
+
+            self.nGames += 1
+    
+    def save(self, filename):
+        """Store this instance as pickle"""
+        # delete loss curves to save filesize
+        self.rgrSC.loss_curve_ = []
+        self.rgrRr.loss_curve_ = []
+        self.rgrEx.loss_curve_ = []
+        
+        pickle.dump(self, open(filename, "wb" ) )
+    
+    # https://stackoverflow.com/a/37658673
+    def load(self, filename):
+        try:
+            player = pickle.load(open(filename, "rb"))
+        except FileNotFoundError:
+#            print('Coluld not loaded player! File:', filename, 'not found!')
+            return
+        else:
+            self.__dict__.update(player.__dict__)
+#            print('Loaded player from file:', filename)
+            
+
+
+
+class PlayerAI_full_v2(AbstractPlayer):
+    """AI Player: 3 regressor concept
+    
+    Regressors
+    ----------
+    rgrSC: forcasts the final score based on open categories and upper sum
+    rgrRr: forcasts the DIFFERENCE to rgrScrCat based on dice to keep
+    rgrEx: forcasts the expected score in each category based on a
+                set of 0-5 dice, which are kept.
+                This is used as auxiliary encoder information for rgrKeepDice.
+    
+    Categorie decision is made based on the direct reward 
+    + the reward forcast of the resulting scoreboard.
+    """
+    name = 'PlayerAI_full_v2'
+    def __init__(
+            self,
+#            rgrSCArgs={'hidden_layer_sizes':(20, 10)},
+            rgrSCArgs={'hidden_layer_sizes':(40, 40), 'max_iter': 1000},
+            rgrRrArgs={'hidden_layer_sizes':(20, 20), 'max_iter': 1000},
+#            rgrRrArgs={'hidden_layer_sizes':(40, 40)},
+            rgrExArgs={'activation': 'tanh',
+                       'solver': 'adam',
+                       'hidden_layer_sizes':(30, 40, 40, 30),
+                       'max_iter': 1000},
+#            nGamesPreplayMem=10,
+#            nGamesPartFit=10,
+            nGamesPreplayMem=200,
+            nGamesPartFit=50,
+            gamma=1,
+            fn=None):
+        """
+        mlpRgrArgs : dict
+            Arguments passed to MLPRegressor
+        lenScrReplayMem : int
+            Length of the replay memory for self.scrRgr training
+        lenMiniBatch : int
+            Number of samples used for each training iteration
+        gamma : 0 <= gamma <= 1
+            Damping factor for future rewards
+        """
+        super().__init__()
+        
+        self.rgrSC = MLPRegressor(**rgrSCArgs)
+        self.rgrRr = MLPRegressor(**rgrRrArgs)
+        self.rgrEx = MLPRegressor(**rgrExArgs)
+        self.repMemSC = []
+        self.repMemRr = []
+        self.repMemEx = []
+        self.nGamesPreplayMem = nGamesPreplayMem
+        self.nGamesPartFit = nGamesPartFit
+#        self.nRepPartFit = nRepPartFit
+        self.gamma = gamma
+        self.nGames = 0
+        
+        self.rgrBaks = None
+        
+        if fn is not None:
+            self.load(fn)
+            
+        
+        
+    def choose_reroll(self, scoreBoard, dice, attempt):
+        opts = self.eval_options_reroll(scoreBoard, dice, attempt)
+        info = ''
+        for opt in opts:
+            info += '\t {:15} {:.2f}\n'.format(str(dice.keep(opt[0])), opt[1])
+        return opts[0][0], info
+#        return opts[0][0], str(opts)
+    
+    def choose_cat(self, scoreBoard, dice):
+        opts = self.eval_options_cat(scoreBoard, dice)
+        info = ''
+        for opt in opts:
+            info += '\t {:15} {:3.2f} {:3.2f} {:3.2f}\n'.format(
+                    ScoreBoard.cats[opt[0]], *opt[1:])
+        return opts[0][0], info
+    
+    def eval_options_cat(self, scoreBoard, dice):
+        """Return a sorted list with the options to choose for cat and
+        the expected restScore.
+        returns: [(cat, score), (cat, score), ...]
+        """
+        opts = []
+
+        for cat in scoreBoard.open_cats():
+            score, bonus = scoreBoard.check_points(dice, cat)
+#            assert bonus == 0, str(scoreBoard) + str(dice)
+            directReward = score + bonus
+            
+            # additionally consider the resulting state of the score board
+            tmpSB = scoreBoard.copy()
+            tmpSB.add(dice, cat)
+            futureReward = self.predict_SC(tmpSB)
+            
+            reward = directReward + self.gamma * futureReward
+            opts += [(cat, reward, directReward, futureReward)]
+            
+            
+        opts = sorted(opts, key=lambda x: x[1], reverse=True)
+        return opts
+    
+    
+    
+    def eval_options_reroll(self, sb, dice, att):
+        opts = []
+        keepDices = []
+        for reroll in product([True, False], repeat=5):
+            # avoid unnecessary rerolls ([1, 2r, 2, 3, 4] and [1, 2, 2r, 3, 4])
+            keepDice = dice.keep(reroll).vals
+            if arreq_in_list(keepDice, keepDices):
+                continue
+            else:
+                keepDices += [keepDice]
+
+            reward = self.predict_Rr(sb, att, dice, reroll)
+            opts += [(reroll, reward)]
+
+        opts = sorted(opts, key=lambda x: x[1], reverse=True)
+        return opts
+    
+    @staticmethod
+    def encode_bonus(scoreBoard):
+#        upSum = scoreBoard.getUpperSum()
+#        if upSum >= 63 or np.sum(scoreBoard.mask[:6])==0:
+##            x[13] = (5*(2+3+4+5+6) - 63) / 5  # max posible values
+#            x[13] = -63/5  # min possible value
+#        else:
+#            # nbp: needed bonus progress (i.e. 3 in each cat)
+#            nbp = np.sum(
+#                    np.logical_not(scoreBoard.mask[:6]).astype(int)
+#                    * np.array(range(1,7)) * 3)
+#            mrbp = (63 - nbp) / 3 * 5  # max reachable bonus points
+#            x[13] = (upSum - nbp) / mrbp
+##            lp(scoreBoard.scores[:6])
+##            lp(nbp, scoreBoard.getUpperSum(), x[20])
+#        # prevent impossible bonus attempts
+#        if x[13] < -1:
+#            x[13] = -63/5
+        return scoreBoard.getUpperSum() / 63
+    
+    @property
+    def nFeat_SC(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 13 + 1
+    def encode_SC(self, scoreBoard):
+        """Encodes a scoreboard to a numpy array,
+        which is used as the input layer
+        """
+        x = np.zeros(shape=(self.nFeat_SC))
+        x[:13] = scoreBoard.mask.astype(int)
+        x[13] = self.encode_bonus(scoreBoard)
+        return x
+    def predict_SC(self, scoreBoard):
+        """Includes exception handling for direct predict call"""
+        x = self.encode_SC(scoreBoard)
+        try:
+            y = self.rgrSC.predict(x.reshape(1, -1))[0]
+        except NotFittedError:
+            y = 0
+        return y
+    def repMemSC_xy(self, ind):
+        """Constructs input (x), output (y) tuple from replay memory."""
+        sbOld, rew, sbNew = self.repMemSC[ind]
+        x = self.encode_SC(sbOld)
+        y = rew + self.gamma * self.predict_SC(sbNew)
+        return x, y
+    
+    @property
+    def nFeat_Rr(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 13 + 13 + 1 + 1
+    def encode_Rr(self, scoreBoard, attempt, dice, deciRr):
+        """Encodes a scoreboard to a numpy array,
+        which is used as the input layer
+        13: open cats
+        13: exp score in each cat
+        1: attempt
+        1: bonus
+        """
+        x = np.zeros(shape=(self.nFeat_Rr))
+        x[:13] = scoreBoard.mask.astype(int)
+        x[13:26] = self.predict_Ex(dice, deciRr)
+        x[13:26] *= x[:13]
+#        x[13:26], _ = ScoreBoard.stat_cat_score(dice.keep(deciRr))
+        x[26] = attempt
+        x[27] = self.encode_bonus(scoreBoard)
+        return x
+    def predict_Rr(self, scoreBoard, attempt, dice, deciRr):
+        """Includes exception handling for direct predict call"""
+        x = self.encode_Rr(scoreBoard, attempt, dice, deciRr)
+        try:
+            y = self.rgrRr.predict(x.reshape(1, -1))[0]
+        except NotFittedError:
+            y = 0
+        return y
+    def repMemRr_xy(self, ind):
+        """Constructs input (x), output (y) tuple from replay memory."""
+        sb, attempt, diceOld, deciRr, diceNew = self.repMemRr[ind]
+        x = self.encode_Rr(sb, attempt, diceOld, deciRr)
+        if attempt == 0:
+            opts = self.eval_options_reroll(sb, diceNew, 1)
+            y = self.gamma * opts[0][1]
+        else:
+            assert attempt == 1
+            opts = self.eval_options_cat(sb, diceNew)
+            # evaluate SC forfast before reroll
+            yOld = self.predict_SC(sb)
+            y = self.gamma * (opts[0][1] - yOld)
+        return x, y
+    
+    @property
+    def nFeat_Ex(self):
+        """size or regressor input, reffers to MLPRegressor.fit
+        Directly coupled to self.encoder.
+        """
+        return 5 + 1 + 6 + 1 + 5 + 2 + 4
+    def encode_Ex(self, dice, deciRr):
+        """Encodes a scoreboard to a numpy array,
+        which is used as the input layer
+        
+        input layer:
+            5: dice (values: 1-6 / to be rerolled: 0)
+            1: number of kept dice
+            6: histogramm (cats 1-6) * score
+            1: sum(dice)
+            5: number of 1ofAKind, double, triple, 4ofAKind, 5ofAKind
+            2: small straight indicators
+            4: large straight indicators
+        """
+        keepDice = dice.vals[np.logical_not(deciRr)]
+        x = np.zeros(shape=(self.nFeat_Ex))
+        x[:len(keepDice)] = keepDice
+        x[5] = len(keepDice)
+        hist = np.histogram(keepDice, bins=np.linspace(.5,6.5,7))[0]
+        x[6:12] = hist * np.array([1,2,3,4,5,6])
+        x[12] = np.sum(keepDice)
+        for ii in range(1, 6):  # number of single, double, ...
+            x[12 + ii] = len(hist[hist == ii])  # x[13]-x[17]
+        # small straight
+        if set([1, 2, 3]) <= set(keepDice) or set([4, 5, 6]) <= set(keepDice):
+            x[18] = 1  # 3 in a row, one open end
+        if set([2, 3, 4]) <= set(keepDice) or set([3, 4, 5]) <= set(keepDice):
+            x[19] = 1  # 3 in a row, two open ends
+        # large straight
+        for nr in range(2):
+            numbsInRange = set(keepDice) & set(range(1+nr, 6+nr))
+            x[20 + 2*nr] = len(numbsInRange)  # number of different dice
+            segs = split_in_consec_ints(numbsInRange)
+            segs = [len(sl) for sl in segs]
+            x[21 + 2*nr] = np.amax(segs)  # len of max consequtive sequence
+                
+        # how many numbers occupied in range 1-5
+        # max number of conseccutive in range 1-5
+        return x
+    def predict_Ex(self, dice, deciRr):
+        """Includes exception handling for direct predict call"""
+        x = self.encode_Ex(dice, deciRr)
+        try:
+            y = self.rgrEx.predict(x.reshape(1, -1))[0]
+        except NotFittedError:
+            y = np.zeros(shape=(13))
+        return y
+    def repMemEx_xy(self, ind):
+        """Constructs input (x), output (y) tuple from replay memory."""
+        diceOld, deci, diceNew = self.repMemEx[ind]
+        return self.encode_Ex_xy(diceOld, deci, diceNew)
+    def encode_Ex_y(self, dice):
+        """Evaluate the score in each cat based on dice
+        dice : can be a 0 to 5 dice Dice object"""
+        y = np.zeros(shape=(13))
+        sb = ScoreBoard()
+        for cc in range(13):
+            y[cc], bonus = sb.check_points(dice, cc)
+#        lp(dice, y)
+        return y
+    def encode_Ex_xy(self, diceOld, deciRr, diceNew):
+        x = self.encode_Ex(diceOld, deciRr)
+        y = self.encode_Ex_y(diceNew)
+#        y = np.zeros(shape=(13))
+#        sb = ScoreBoard()
+#        for cc in range(13):
+#            y[cc], bonus = sb.check_points(diceNew, cc)
+        return x, y
+    
+    def aux_Ex_genTrainingTuple(self, seed=None):
+        """generates diceOld, deci, diceNew pairs, 
+        which can be used for training or testing
+        
+        n : int
+            number of pairs
+        seed : int
+            random numbers seed
+        
+        returns:
+            list of (diceOld, deci, diceNew) tuples
+        """
+        if seed is not None:
+            np.random.seed(seed)
+#        lst = []
+#        for nn in range(n):
+#            diceOld = Dice()
+#            deci = np.random.choice([True, False], size=5)
+#            diceNew = diceOld.roll(deci)
+#            lst += [(diceOld, deci, diceNew)]
+#        return lst
+        diceOld = Dice()
+        deci = np.random.choice([True, False], size=5)
+        diceNew = diceOld.roll(deci)
+        return diceOld, deci, diceNew
+    def aux_Ex_train(self, n, facMC=2, seed=None, optRgrParas=False):
+        """trains rgrEx separately
+        
+        n : int
+            number of pairs
+        facMC : float
+            number of Monte Carlo trials / number of possible combinations
+        seed : int
+            random numbers seed
+        optRgrParas : bool
+            To test different Regressor Layouts.
+            These can be used for self.rgrEx then.
+        """
+        if seed is not None:
+            np.random.seed(seed)
+#        lst = self.aux_Ex_genPairs(n, seed)
+        X = np.empty(shape=(n, self.nFeat_Ex))
+        y = np.empty(shape=(n, 13))
+        
+        for nn in range(n):
+            diceOld, deci, diceNew = self.aux_Ex_genTrainingTuple()
+            X[nn, :], y[nn, :] = self.encode_Ex_xy(diceOld, deci, diceNew)
+        self.rgrEx = self.rgrEx.fit(X, y)
+        
+#        for nn in range(n):
+#            diceOld = Dice()
+#            deciRr = np.random.choice([True, False], size=5)
+#            X[nn, :] = self.encode_Ex(diceOld, deciRr)
+#            
+#            # Monte Carlo simulation to get expection values in each cat
+#            nMC = int(np.rint(facMC * 6**np.sum(deciRr)))
+#            if np.sum(deciRr) == 0:
+#                nMC = 1
+#            yMC = np.empty(shape=(nMC, 13))
+#            for mm in range(nMC):
+#                diceNew = diceOld.roll(deciRr)
+#                yMC[mm, :] = self.encode_Ex_y(diceNew)
+#            y[nn, :] = np.mean(yMC, axis=0)
+#            
+##            diceOld, deci, diceNew = self.aux_Ex_genTrainingTuple()
+##            X[nn, :], y[nn, :] = self.encode_Ex_xy(diceOld, deci, diceNew)
+##            assert np.isfinite(X[nn, :]).all(), str(X[nn, :])
+##            assert np.isfinite(y[nn, :]).all(), str(y[nn, :])
+#        self.rgrEx = self.rgrEx.fit(X, y)
+        
+        if optRgrParas:
+            # https://stackoverflow.com/a/46031556
+            from sklearn.model_selection import GridSearchCV
+            param_grid = [
+                    {'activation' : ['identity', 'logistic', 'tanh', 'relu'],
+                     'solver' : ['lbfgs', 'sgd', 'adam'],
+                     'hidden_layer_sizes': [
+                             (10,), (20,), (30,),
+                             (10, 10), (20, 20), (30, 30),
+#                             (10, 10, 10), (20, 20, 20), (30, 30, 30),
+#                             (40, 40, 40),
+#                             (20, 40, 40, 20, 30), (20, 30, 40, 40, 20),
+#                             (40, 30, 20, 40, 20), (20, 40, 30, 40, 20),
+                             ]
+                     }
+                    ]
+            rgr = GridSearchCV(MLPRegressor(), param_grid, cv=5)#, scoring='accuracy')
+            assert np.isfinite(X).all(), str(X)
+            assert np.isfinite(y).all(), str(y)
+            rgr.fit(X,y)
+            lp("Best parameters set found on development set:")
+            lp(rgr.best_params_)
+        
+    def aux_Ex_benchmark(self, n, seed=None):
+        """trains rgrEx separately
+        
+        n : int
+            number of pairs
+        nMC : int
+            number of Monte Carlo trials to verify
+        facMC : float
+            number of Monte Carlo trials / number of possible combinations
+        seed : int
+            random numbers seed
+        """
+        bmAbs = []
+        bmRel = []
+        for nn in range(n):
+            diceOld = Dice()
+            deciRr = np.random.choice([True, False], size=5)
+            x = self.encode_Ex(diceOld, deciRr)
+            y = self.rgrEx.predict(x.reshape(1, -1))[0]
+            
+            diceKeep = diceOld.keep(deciRr)
+            meanComb, semComb = ScoreBoard.stat_cat_score(diceKeep)
+            
+#            nRr = int(np.sum(deciRr))
+#            nCombs = 6**nRr
+#
+#            yCombs = np.empty(shape=(nCombs, 13))
+#            for mm, comb in enumerate(product([1, 2, 3, 4, 5, 6], repeat=nRr)):
+#                diceNew = np.copy(diceOld.vals)
+#                diceNew[deciRr] = comb
+#                diceNew = Dice(diceNew)
+##                lp(diceOld, deciRr, comb)
+#                yCombs[mm, :] = self.encode_Ex_y(diceNew)
+#            meanComb = np.mean(yCombs, axis=0)
+#            semComb = np.std(yCombs, axis=0) / nCombs**.5
+            dist = y - meanComb
+            dist = np.where(abs(dist) <= semComb, 0, dist)
+            dist = np.where(dist > 0, dist-semComb, dist)
+            dist = np.where(dist < 0, -dist+semComb, dist)
+            
+            assert (dist >= 0).all()
+#            lp(diceKeep)
+#            lp(y)
+#            lp(meanComb)
+#            lp(semComb)
+#            lp(dist)
+            
+            bmAbs += [dist]
+            norm = meanComb #(y + meanComb) / 2
+            norm = np.where(norm < 1, 1, norm)
+            bmRel += [dist/norm]
+
+        return np.mean(bmAbs, axis=0), np.mean(bmRel, axis=0)
+#        return np.mean(bmAbs, axis=0), np.std(benchmark, axis=0)
+    
+    def aux_Ex_benchmark_bak(self, n, nMC, seed=None):
+        """trains rgrEx separately
+        
+        n : int
+            number of pairs
+        nMC : int
+            number of Monte Carlo trials to verify
+        seed : int
+            random numbers seed
+        """
+        benchmark = []
+        for nn in range(n):
+            diceOld = Dice()
+            deciRr = np.random.choice([True, False], size=5)
+            x = self.encode_Ex(diceOld, deciRr)
+            y = self.rgrEx.predict(x.reshape(1, -1))[0]
+            yMC = np.empty(shape=(nMC, 13))
+            for mm in range(nMC):
+                diceNew = diceOld.roll(deciRr)
+                _, yMC[mm, :] = self.encode_Ex_xy(diceOld, deciRr, diceNew)
+            yMC = np.mean(yMC, axis=0)
+            benchmark += [np.linalg.norm(y-yMC)]
+        return np.mean(benchmark), np.std(benchmark)
+    
+    def to_repMem(self, gameLog):
+        """Add expereience to score regressor replay memory
+        
+        if possible in format:
+        state1, action, reward, state2
+        
+        formats
+        -------
+        rgrScrCat: (sb, rew, sb)
+        rgrDeltaRr: (sb, attempt, dice, deciRr, dice)
+        rgrChances: (dice, deciRr, dice)
+        
+        gameLog : Game.log
+        """
+        for ii in range(13):
+            sb1 = gameLog.loc[ii, 'scoreBoard']
+            sb2 = gameLog.loc[ii+1, 'scoreBoard']
+            reward = sb2.getSum() - sb1.getSum()
+            self.repMemSC += [(sb1, reward, sb2)]
+            
+            dice0, deci0 = gameLog.loc[ii, ['dice0', 'deci0']]
+            dice1, deci1 = gameLog.loc[ii, ['dice1', 'deci1']]
+            dice2 = gameLog.loc[ii, 'dice2']
+            self.repMemRr += [(sb1, 0, dice0, deci0, dice1)]
+            self.repMemRr += [(sb1, 1, dice1, deci1, dice2)]
+            
+            self.repMemEx += [(dice0, deci0, dice1), (dice1, deci1, dice2)]
+            
+        self.repMemSC = self.repMemSC[-self.nGamesPreplayMem*13:]
+        self.repMemRr = self.repMemRr[-self.nGamesPreplayMem*26:]
+        self.repMemEx = self.repMemEx[-self.nGamesPreplayMem*26:]
+    
+
+    
+    def train(self, nGames, benchmarkSeed,
+              expl_cat_fct=explore_boltzmann,
+              expl_cat_params={'minMaxRat': 5000},
+              expl_rr_fct=explore_boltzmann,
+              expl_rr_params={'minMaxRat': 50000},
+              updTemp = 1.44
+              ):
+        """Training the Player with nGames and based on the trainers moves.
+    
+        Extended description of function.
+    
+        Parameters
+        ----------
+        nGames : int
+            Nomber of games
+        trainerEnsemble : PlayerEnsemble
+            Integer represents the weight of the specici players moves
+            player is someone doing decisions; None is self
+        pRandCat : 0 <= float <= 1
+            Probability for a random move (choose cat).
+            Equivalent to epsilon of eplison-greedy startegy.
+            Increase this factor in case of anti-learning (i.e. systematically
+            decreaings benchmarks to a bad decisions on purpose startegy)
+        pRat : float
+            chose an option for training which promisses a
+            high score. A weighted choose is performed where
+            the best option is pRat times as likely as
+            the worst option.
+        updTemp : float
+            Boltzman probability temperature for
+            updating/reseting the rgrs after training
+    
+        Returns
+        -------
+        bool
+            Description of return value
+    
+        See Also
+        --------
+        otherfunc : some related other function
+    
+        Examples
+        --------
+        These are written in doctest format, and should illustrate how to
+        use the function.
+    
+        >>> a=[1,2,3]
+        >>> [x + 3 for x in a]
+        [4, 5, 6]
+        """
+        if self.nGames == 0:
+            # initiallize rgrEx with some random samples first
+            np.random.seed(self.nGames)
+            self.aux_Ex_train(n=100000)
+        
+#        assert 0 <= pOptRr + pRandRr <= 1
+        for gg in range(nGames):
+            np.random.seed(self.nGames)
+            if self.nGames == 0:
+                tmpPlayer = PlayerRandom()
+            else:
+                def fct_choose_reroll(scoreBoard, dice, attempt):
+                    sb = scoreBoard
+                    info = ''
+                    
+                    opts = self.eval_options_reroll(sb, dice, attempt)
+                    actions = [opt[0] for opt in opts]
+                    qs = [opt[1] for opt in opts]
+                    reroll = expl_rr_fct(actions, qs, **expl_rr_params)
+                    
+                    return reroll, info
+                
+                def fct_choose_cat(scoreBoard, dice):
+                    sb = scoreBoard
+                    info = ''
+                    
+                    opts = self.eval_options_cat(sb, dice)
+#                    opts = np.array(opts)
+                    actions = [opt[0] for opt in opts]
+                    qs = [opt[1] for opt in opts]
+                    cat = expl_cat_fct(actions, qs, **expl_cat_params)
+                    
+                    return cat, info
+
+                tmpPlayer = PlayerTemporary(
+                        fct_choose_cat=fct_choose_cat,
+                        fct_choose_reroll=fct_choose_reroll)
+
+            game = Game(tmpPlayer)
+            self.to_repMem(game.log)
+            
+            
+            
+            #rgrSC
+            n_samples = self.nGamesPartFit * 13
+            X = np.empty(shape=(n_samples, self.nFeat_SC))
+            y = np.empty(shape=(n_samples,))
+            allInds = list(range(len(self.repMemSC)))
+            replace=False
+            if len(allInds) < n_samples:
+                replace = True
+            inds = np.random.choice(allInds, size=n_samples, replace=replace)
+            for nn, ind in enumerate(inds):
+                X[nn, :], y[nn] = self.repMemSC_xy(ind)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=ConvergenceWarning)
                 self.rgrSC = self.rgrSC.partial_fit(X, y)
+#                self.rgrSC.partial_fit(X, y)
             
             #rgrEx
             n_samples = self.nGamesPartFit * 26
@@ -2622,6 +3242,7 @@ class PlayerAI_full_v1(AbstractPlayer):
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=ConvergenceWarning)
                 self.rgrEx = self.rgrEx.partial_fit(X, y)
+#                self.rgrEx.partial_fit(X, y)
             
             #rgrRr
             n_samples = self.nGamesPartFit * 26
@@ -2637,11 +3258,39 @@ class PlayerAI_full_v1(AbstractPlayer):
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=ConvergenceWarning)
                 self.rgrRr = self.rgrRr.partial_fit(X, y)
+#                self.rgrRr.partial_fit(X, y)
 
             self.nGames += 1
+            
+        # check if training brought some improovement
+        m, s = self.benchmark(seed=benchmarkSeed)
+        update = False
+        if self.rgrBaks is None or self.rgrBaks[0] < m:
+            update = True
+        else:
+            pUpdate = np.exp((m-self.rgrBaks[0])/updTemp)
+            if np.random.rand() <= pUpdate:
+                update = True
+        if update:
+            self.rgrBaks = [
+                    m, s, deepcopy(self.rgrSC),
+                    deepcopy(self.rgrEx), deepcopy(self.rgrRr)]
+            lp('updated')
+        else:
+            self.rgrSC = deepcopy(self.rgrBaks[2])
+            self.rgrEx = deepcopy(self.rgrBaks[3])
+            self.rgrRr = deepcopy(self.rgrBaks[4])
+            lp('rgrs reset', m, s, self.benchmark(seed=benchmarkSeed))
+        lp('experience: ', len(self.rgrSC.loss_curve_),
+           len(self.rgrRr.loss_curve_), len(self.rgrEx.loss_curve_))
     
     def save(self, filename):
         """Store this instance as pickle"""
+        # delete loss curves to save filesize
+        self.rgrSC.loss_curve_ = []
+        self.rgrRr.loss_curve_ = []
+        self.rgrEx.loss_curve_ = []
+        
         pickle.dump(self, open(filename, "wb" ) )
     
     # https://stackoverflow.com/a/37658673
@@ -2655,4 +3304,3 @@ class PlayerAI_full_v1(AbstractPlayer):
             self.__dict__.update(player.__dict__)
 #            print('Loaded player from file:', filename)
             
-
