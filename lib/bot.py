@@ -3150,6 +3150,7 @@ class PlayerAI_full_v2(AbstractPlayer):
         updTemp : float
             Boltzman probability temperature for
             updating/reseting the rgrs after training
+            1.44: 50% for decrease of 1 point
     
         Returns
         -------
@@ -3275,14 +3276,14 @@ class PlayerAI_full_v2(AbstractPlayer):
             self.rgrBaks = [
                     m, s, deepcopy(self.rgrSC),
                     deepcopy(self.rgrEx), deepcopy(self.rgrRr)]
-            lp('updated')
+#            lp('updated')
         else:
             self.rgrSC = deepcopy(self.rgrBaks[2])
             self.rgrEx = deepcopy(self.rgrBaks[3])
             self.rgrRr = deepcopy(self.rgrBaks[4])
-            lp('rgrs reset', m, s, self.benchmark(seed=benchmarkSeed))
-        lp('experience: ', len(self.rgrSC.loss_curve_),
-           len(self.rgrRr.loss_curve_), len(self.rgrEx.loss_curve_))
+#            lp('rgrs reset', m, s, self.benchmark(seed=benchmarkSeed))
+#        lp('experience: ', len(self.rgrSC.loss_curve_),
+#           len(self.rgrRr.loss_curve_), len(self.rgrEx.loss_curve_))
     
     def save(self, filename):
         """Store this instance as pickle"""
