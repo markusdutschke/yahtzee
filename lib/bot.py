@@ -2642,8 +2642,8 @@ class PlayerAI_full_v2(AbstractPlayer):
     def __init__(
             self,
 #            rgrSCArgs={'hidden_layer_sizes':(20, 10)},
-            rgrSCArgs={'hidden_layer_sizes':(40, 40), 'max_iter': 1000},
-            rgrRrArgs={'hidden_layer_sizes':(20, 20), 'max_iter': 1000},
+            rgrSCArgs={'hidden_layer_sizes':(40, 40, 40), 'max_iter': 1000},
+            rgrRrArgs={'hidden_layer_sizes':(40, 40, 40), 'max_iter': 1000},
 #            rgrRrArgs={'hidden_layer_sizes':(40, 40)},
             rgrExArgs={'activation': 'tanh',
                        'solver': 'adam',
@@ -3263,27 +3263,27 @@ class PlayerAI_full_v2(AbstractPlayer):
 
             self.nGames += 1
             
-        # check if training brought some improovement
-        m, s = self.benchmark(seed=benchmarkSeed)
-        update = False
-        if self.rgrBaks is None or self.rgrBaks[0] < m:
-            update = True
-        else:
-            pUpdate = np.exp((m-self.rgrBaks[0])/updTemp)
-            if np.random.rand() <= pUpdate:
-                update = True
-        if update:
-            self.rgrBaks = [
-                    m, s, deepcopy(self.rgrSC),
-                    deepcopy(self.rgrEx), deepcopy(self.rgrRr)]
-#            lp('updated')
-        else:
-            self.rgrSC = deepcopy(self.rgrBaks[2])
-            self.rgrEx = deepcopy(self.rgrBaks[3])
-            self.rgrRr = deepcopy(self.rgrBaks[4])
-#            lp('rgrs reset', m, s, self.benchmark(seed=benchmarkSeed))
-#        lp('experience: ', len(self.rgrSC.loss_curve_),
-#           len(self.rgrRr.loss_curve_), len(self.rgrEx.loss_curve_))
+#        # check if training brought some improovement
+#        m, s = self.benchmark(seed=benchmarkSeed)
+#        update = False
+#        if self.rgrBaks is None or self.rgrBaks[0] < m:
+#            update = True
+#        else:
+#            pUpdate = np.exp((m-self.rgrBaks[0])/updTemp)
+#            if np.random.rand() <= pUpdate:
+#                update = True
+#        if update:
+#            self.rgrBaks = [
+#                    m, s, deepcopy(self.rgrSC),
+#                    deepcopy(self.rgrEx), deepcopy(self.rgrRr)]
+##            lp('updated')
+#        else:
+#            self.rgrSC = deepcopy(self.rgrBaks[2])
+#            self.rgrEx = deepcopy(self.rgrBaks[3])
+#            self.rgrRr = deepcopy(self.rgrBaks[4])
+##            lp('rgrs reset', m, s, self.benchmark(seed=benchmarkSeed))
+##        lp('experience: ', len(self.rgrSC.loss_curve_),
+##           len(self.rgrRr.loss_curve_), len(self.rgrEx.loss_curve_))
     
     def save(self, filename):
         """Store this instance as pickle"""

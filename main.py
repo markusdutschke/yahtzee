@@ -356,6 +356,10 @@ def todo():
     The question is a bit how. If it encodes a clear recommendation to MLPrgr
     it should be exact! Maybe try the absolute upper some and some fancy
     encoded bonus as redundant information.
+    Normalize the bonus information to range [0,1] due to mlprgr properties
+- check out the average score of training games and compare if this is somehow close to the benchmark scores
+- replace rgrEx with a lookup table which is updated with every experience, skip therefore replay memory
+- check if chance is always used in an early stage
 - set gamma=0.98 and test.
     No idea, what this is going to help, but it is done in literature,
     so it cant hurt much here. One should evaluate the bene/male-fit carefully.
