@@ -81,8 +81,16 @@ class Dice:
     
     def compress(self):
         """Result of the 5 dice is encoded as a 5 digit integer"""
-        pass
+        comp = 0
+        for ii in range(len(self.vals)):
+            comp += 10**ii * self.vals[len(self.vals)-1-ii]
+        return comp
 
+    
+    def read_compressed(self, intComp):
+        """Writes compressed integer into self.vals"""
+        pass
+        
 class ScoreBoard:
     cats = [
             'Aces','Twos','Threes','Fours','Fives','Sixes',

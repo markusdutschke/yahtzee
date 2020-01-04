@@ -96,7 +96,40 @@ def explore_epsgreedy(actions, qs, epsilon):
     else:
         return actions[0]
 
+
+class statCatScorePredictor_exact:
+    """Predicts the statistical score in the different categories,
+    based on a number of dice, which are kept fixed.
     
+    Whenever a new combination of dice is requested, the statistically
+    exact probabilities are calculated first and the results are stored in
+    a pandas dataframe."""
+    lutCols = ['c'+str(ii) for ii in range(13)]  # lookuptable columns
+    
+    def __init__(self):
+        self.lookupTable = pd.DataFrame(
+                columns=self.lutCols)
+    
+    def predict(self, dice):
+        """predict the expected score in each cat for given dice"""
+        comp = dice.compress()
+#        lp(comp)
+        if not comp in self.lookupTable.index:
+            expVals, _ = ScoreBoard.stat_cat_score(dice)
+            dfTmp = pd.DataFrame(expVals.reshape(1,-1),
+                                 columns=self.lutCols,
+                                 index=[comp])
+            self.lookupTable = self.lookupTable.append(dfTmp)
+#        else:
+#            lp('found in table')
+#            lp(comp, self.lookupTable.loc[comp, :].values)
+#            assert False
+            
+        res = self.lookupTable.loc[comp, :].values
+#        lp(self.lookupTable)
+#        lp(res, res.shape)
+        return res
+        
 
 class PlayerEnsemble:
     """Representing a set of players with a set of probablilities to
@@ -2642,9 +2675,8 @@ class PlayerAI_full_v2(AbstractPlayer):
     def __init__(
             self,
 #            rgrSCArgs={'hidden_layer_sizes':(20, 10)},
-            rgrSCArgs={'hidden_layer_sizes':(40, 40, 40), 'max_iter': 1000},
-            rgrRrArgs={'hidden_layer_sizes':(40, 40, 40), 'max_iter': 1000},
-#            rgrRrArgs={'hidden_layer_sizes':(40, 40)},
+            rgrSCArgs={'hidden_layer_sizes':(40, 40), 'max_iter': 1000},
+            rgrRrArgs={'hidden_layer_sizes':(20, 20), 'max_iter': 1000},
             rgrExArgs={'activation': 'tanh',
                        'solver': 'adam',
                        'hidden_layer_sizes':(30, 40, 40, 30),
@@ -2680,6 +2712,8 @@ class PlayerAI_full_v2(AbstractPlayer):
         self.nGames = 0
         
         self.rgrBaks = None
+        
+        self.scsp = statCatScorePredictor_exact()
         
         if fn is not None:
             self.load(fn)
@@ -2810,7 +2844,8 @@ class PlayerAI_full_v2(AbstractPlayer):
         """
         x = np.zeros(shape=(self.nFeat_Rr))
         x[:13] = scoreBoard.mask.astype(int)
-        x[13:26] = self.predict_Ex(dice, deciRr)
+#        x[13:26] = self.predict_Ex(dice, deciRr)
+        x[13:26] = self.scsp.predict(dice.keep(deciRr))
         x[13:26] *= x[:13]
 #        x[13:26], _ = ScoreBoard.stat_cat_score(dice.keep(deciRr))
         x[26] = attempt
@@ -3170,10 +3205,10 @@ class PlayerAI_full_v2(AbstractPlayer):
         >>> [x + 3 for x in a]
         [4, 5, 6]
         """
-        if self.nGames == 0:
-            # initiallize rgrEx with some random samples first
-            np.random.seed(self.nGames)
-            self.aux_Ex_train(n=100000)
+#        if self.nGames == 0:
+#            # initiallize rgrEx with some random samples first
+#            np.random.seed(self.nGames)
+#            self.aux_Ex_train(n=100000)
         
 #        assert 0 <= pOptRr + pRandRr <= 1
         for gg in range(nGames):
@@ -3229,21 +3264,21 @@ class PlayerAI_full_v2(AbstractPlayer):
                 self.rgrSC = self.rgrSC.partial_fit(X, y)
 #                self.rgrSC.partial_fit(X, y)
             
-            #rgrEx
-            n_samples = self.nGamesPartFit * 26
-            X = np.empty(shape=(n_samples, self.nFeat_Ex))
-            y = np.empty(shape=(n_samples, 13))
-            allInds = list(range(len(self.repMemEx)))
-            replace=False
-            if len(allInds) < n_samples:
-                replace = True
-            inds = np.random.choice(allInds, size=n_samples, replace=replace)
-            for nn, ind in enumerate(inds):
-                X[nn, :], y[nn, :] = self.repMemEx_xy(ind)
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", category=ConvergenceWarning)
-                self.rgrEx = self.rgrEx.partial_fit(X, y)
-#                self.rgrEx.partial_fit(X, y)
+#            #rgrEx
+#            n_samples = self.nGamesPartFit * 26
+#            X = np.empty(shape=(n_samples, self.nFeat_Ex))
+#            y = np.empty(shape=(n_samples, 13))
+#            allInds = list(range(len(self.repMemEx)))
+#            replace=False
+#            if len(allInds) < n_samples:
+#                replace = True
+#            inds = np.random.choice(allInds, size=n_samples, replace=replace)
+#            for nn, ind in enumerate(inds):
+#                X[nn, :], y[nn, :] = self.repMemEx_xy(ind)
+#            with warnings.catch_warnings():
+#                warnings.filterwarnings("ignore", category=ConvergenceWarning)
+#                self.rgrEx = self.rgrEx.partial_fit(X, y)
+##                self.rgrEx.partial_fit(X, y)
             
             #rgrRr
             n_samples = self.nGamesPartFit * 26
