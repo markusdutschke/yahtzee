@@ -171,7 +171,7 @@ def main5_trainFullAIPlayer():
 
     
     
-    nGames = list(range(0,100,10)) + list(range(100,50000,100))
+    nGames = list(range(0,100,10)) + list(range(100,25000,100))
     for nT in nGames:
         nT = int(nT)
         if nT<=player.nGames:
@@ -374,6 +374,9 @@ def todo():
     otherwise maybe update regressors (according to some Boltzmann probability)
     This might work pretty well in this case, as the is a lot of randomness
     involved. For the Atari game benchmark this would fail, totally!
+- move bonus consideration to future reward (rgrSC) and not the direct reward
+    Should  avoid different scaling of scores problem
+    Should avoid greedy get bonus behavior for easy reachable bonus scenarios
 
 #- switch on pre-training, increase replaz Mem size
 """)
