@@ -65,8 +65,7 @@ def explore_boltzmann(actions, qs, temp=None, minMaxRat=None):
         probs = np.exp(alpha*probs)
     else:
         probs = np.exp(qs / temp)
-    assert (
-            np.isfinite(probs).all(),
+    assert np.isfinite(probs).all(), (
             str(probs) + ';' + str(qs) + '; ' + str(temp)
             )
     return weighted_choice(actions, probs)
@@ -547,82 +546,7 @@ class PlayerAI_oneShot_test(AbstractPlayer):
         # hopefully learns bonus by itsself
 #        x[0, 31] = np.sum(roundLog[0].data[:6]) / 105  # upper sum for bonus
     
-    def train_dep(self, nGames,
-              trainerEnsemble=PlayerEnsemble(
-                      [(1, PlayerRandom())]
-                      )):
-        """Training the Player with nGames and based on the trainers moves.
-    
-        Extended description of function.
-    
-        Parameters
-        ----------
-        nGames : int
-            Nomber of games
-        trainerEnsemble : PlayerEnsemble
-            Integer represents the weight of the specici players moves
-            player is someone doing decisions; None is self
-    
-        Returns
-        -------
-        bool
-            Description of return value
-    
-        See Also
-        --------
-        otherfunc : some related other function
-    
-        Examples
-        --------
-        These are written in doctest format, and should illustrate how to
-        use the function.
-    
-        >>> a=[1,2,3]
-        >>> [x + 3 for x in a]
-        [4, 5, 6]
-        """
-        """use:
-            MLPRegressor
-            partial_fit
-            https://www.programcreek.com/python/example/93778/sklearn.neural_network.MLPRegressor
-        """
-#        plys = [tr[1] for tr in trainers]
-#        probs = [tr[0] for tr in trainers]
-        
-        for gg in range(nGames):
-#            player =A np.random.choice(plys, p=probs)
-            players = trainerEnsemble.randGameSet()
-#            lp(type(player), len(player))
-#            if player is None:
-#                player = self
-#            lp(type(player), len(player))
-            if hasattr(players[0], 'nGames'):
-                if players[0].nGames <= 0:
-                    players[0] = PlayerRandom()
-#            lp(type(players), len(players))
-            game = Game(players)
-            
-            self.games_to_cat_replay_memory(game)
-            #create miniBatch
-            n_samples = self.catMLParas['lenMiniBatch']
-            X = np.empty(shape=(n_samples, self.n_features))
-            y = np.empty(shape=(n_samples,))
-            for ind in range(n_samples):
-                crmElem = np.random.choice(self.crm)
-#                lp(crmElem[1].vals, ScoreBoard.cats[crmElem[2]], crmElem[3])
-                xy = self.xy_from_crm(crmElem)
-                X[ind, :] = xy[0]
-                y[ind] = xy[1]
-#                lp(X[ind,:])
-#                lp(y[ind])
-#            scoreBoards, dices, cats = self.games_to_cat_info(game)
-#            lp(scoreBoards)
-#            lp(dices)
-#            lp(cats)
-#            X, y = self.cat_decision_parser(scoreBoards, dices, cats)
 
-            self.rgr.partial_fit(X, y)
-            self.nGames += 1
             
     def train(self, nGames, pRand=.1, pRat=100):
         """Training the Player with nGames and based on the trainers moves.
@@ -2043,15 +1967,15 @@ class PlayerAI_full_v2(AbstractPlayer):
             self.repMemRr += [(sb1, 0, dice0, deci0, dice1)]
             self.repMemRr += [(sb1, 1, dice1, deci1, dice2)]
             
-            self.repMemEx += [(dice0, deci0, dice1), (dice1, deci1, dice2)]
+#            self.repMemEx += [(dice0, deci0, dice1), (dice1, deci1, dice2)]
             
         self.repMemSC = self.repMemSC[-self.nGamesPreplayMem*13:]
         self.repMemRr = self.repMemRr[-self.nGamesPreplayMem*26:]
-        self.repMemEx = self.repMemEx[-self.nGamesPreplayMem*26:]
+#        self.repMemEx = self.repMemEx[-self.nGamesPreplayMem*26:]
     
 
     
-    def train(self, nGames, benchmarkSeed,
+    def train(self, nGames,
               expl_cat_fct=explore_boltzmann,
               expl_cat_params={'minMaxRat': 5000},
               expl_rr_fct=explore_boltzmann,

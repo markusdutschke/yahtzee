@@ -385,7 +385,7 @@ def demo():
           + '\n' + '='*80)
     print()
     player = lstPlayersAI[-1]
-    seeds = [3, 6, 9, 10]
+    seeds = [3, 6, 9]
     for ii in range(len(seeds)):
         np.random.seed(seeds[ii])
         game = Game(player)
@@ -399,10 +399,10 @@ def demo():
           + '\n' + '='*80)
     print()
     print('Note: training + benchmarks takes a few hours')
-    player = bot.PlayerAI_full_v1()
+    player = bot.PlayerAI_full_v2()
     nGames = (
-            [1, 2, 3, 4]
-            + [10, 20, 30, 40, 50, 60, 70, 80, 90]
+            list(range(1,10,1))
+            + list(range(10,101,10))
             + list(range(100,8001,100))
             )
     print()
@@ -414,10 +414,10 @@ def demo():
         player.train(nGames=nT-player.nGames)
         m, s = player.benchmark(seed=BENCHMARK_SEED)
         print('\t{:20} {:.1f} +/- {:.1f}'.format(str(player.nGames), m, s))
-    player.save('./trainedBots/PlayerAI_full_v1-nGame5700-2.pick')
+    player.save('./trainedBots/PlayerAI_full_v2-nGame8000-2.pick')
         
 
-
+# --- ToDo
 """
 Lets list some todos here, to improve this code even further 
 or just to check out some ideas
@@ -462,11 +462,9 @@ or just to check out some ideas
 """
 
 
-if __name__== "__main__":
+if __name__ == "__main__":
     np.random.seed(0)
     demo()
-    
+
 #    main5_trainFullAIPlayer()
 #    main6_playAGame()
-
-    
