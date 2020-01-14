@@ -115,10 +115,62 @@ of the Q-learning implementation.
 \section{The dice game Yahtzee}
 
 \subsection{Rules}
+
 \subsection{Implementation}
-Relate the rule with the different classes in the code.
-Especially: Dice, ScoreBoard, Game and AbstractPlayer
-\subsection{Solutions and huristics}
+The code is executed by calling \emph{main.py} in the root folder.
+For an extended functionality, there are several functions implemented, which are however not called.
+These functions is a good starting point of playing around with the code.
+
+The complete game logic can be found in \emph{lib/yahtzee.py}.
+
+The class \emph{Dice}, thereby encodes a set of zero to five dice.
+The \emph{roll} method is used to re-roll one or more dice of a given set.
+The \emph{keep} method reduces the dice in a set to the ones, which shal be kept.
+This method is used to compactly encode game situations, 
+where certain dice shall be re-rolled and hence their values are irrelevant.
+
+The score board is encoded in \emph{ScoreBoard}.
+The class-method \emph{get\_cat\_points} returns the number of points a player gets,
+when assigning a certain dice combination to a category.
+\emph{stat\_cat\_score} calculates the exact expectation values and their standard error for each category
+based on a set of dice. Using a dice configuration of five dice, is the trivial use-case.
+For dice configurations with less then five dice, all combinations of the unspecified dice are looped over.
+The method \emph{add} is used to assign a set of dice to a category on the score board.
+Open categories are accessed by the methods \emph{mask}, \emph{open\_cats\_mask} (todo: probably redundnat to mask)
+and \emph{open\_cats}.
+The sum of a score board is evaluated by the methods \emph{getUpperSum}, \emph{getLowerSum} and \emph{getSum}.
+
+A game can be played by using the class \emph{Game}.
+Thereby a player object is given for initialization.
+A \emph{player}-object supplies two methods: \emph{choose\_reroll} and \emph{choose\_cat}.
+The \emph{Game}-class is calling the \emph{autoplay}-method on initialization.
+The game is started with an empty score board and five dice values.
+From then on the suitable methods of \emph{player} are called and the resulting course of the game is simulated in alternating order.
+A protocol of the game is found in the attribute \emph{log},
+which can be most easily accessed by a string-cast of Game.
+This represents all dice configurations and the players decisions together with the complete score board.
+The internal evaluation for the decisions can be accessed by setting debug to 1.
+This feature is not supported for all players.
+
+Different player types are defined in \emph{lib/bot.py}.
+They all descend from the class \emph{AbstractPlayer},
+which abstractly defines the two mandatory methods \emph{choose\_reroll} and \emph{choose\_cat}.
+Further a method \emph{benchmark} is implemented, 
+which calculates the mean and standard deviation of playing \emph{nGames} (usually 100)
+with this player.
+For reproducibility the seed for random numbers is usually fixed
+(constant \emph{BENCHMARK\_SEED} in main.py).
+
+One subclass, which is important to mention here, is \emph{TemporaryPlayer}.
+This class represents a player,
+which is initiated by custom re-roll and choose category functions.
+This class fulfills mainly the purpose of clean code and 
+is used to simulate a game, when just the two functions are available.
+
+The other subclasses of \emph{AbstractPlayer} are implementation of 
+specific players/strategies as described in section \ref{sec_impl}.
+
+\subsection{Solutions and heuristics}
 
 
 \section{Q-learning}
@@ -130,7 +182,9 @@ This chapter contains all the theoretical background of the code.
 \subsection{Concepts to handle a stochastic system response}
 
 \section{Implementations}
-This chapter is just a description of the different implementations and their performance.
+\label{sec_impl}
+In the following we describe the implementation of different players in \emph{lib/bot.py}.
+
 \subsection{Naive Implementations}
 - random implementation
 - greedy implementation with and without re-roll
