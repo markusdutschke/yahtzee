@@ -20,9 +20,8 @@
   Markus T.~Dutschke\thanks{Use footnote for providing further
     information about author (webpage, alternative
     address)---\emph{not} for acknowledging funding agencies.} \\
-  auXolutions\\
   Erlangen, Germany\\
-  \texttt{markus.dutschke@auXolutions.de} \\
+  \texttt{post at markusdutschke dot de} \\
   %% examples of more authors
    \And
  Elias D.~Striatum \\
@@ -86,24 +85,41 @@ strong research interest has evolved around the possibilities of Q-learning in c
 Thereby computer and board games turned out to be an excellent playground for this research,
 due to their complex character, their easy reproducibility and the clear definition of the systems rules.
 
+ToDo: One should mention some historic achievments with the corresponding machine learning technology here.
+This should include
+- gackgammon (ibm, temporal time difference)
+- go (deepMind, ?)
+and many more (chesss?, poker?, doom?).
+
+Solving these puzzles often paved the path for more complex applications like
+ToDo:
+- thermomix, which evolved out of the solution for fruit ninja (this is false and just an example)
+- more eamples of this structure
+
 Especially the dice game Yahtzee has a set of interesting properties,
-which makes it especially suitable for a Q-learning test system.
-%\footnote{In fact, Yahtzee was chosen, due to the authors personal interest.
-%A few of those properties appears later on.}
+which makes it an highly interesting test system for our purpose:
 \begin{itemize}
 \item Yahtzee is a broadly known game.
-\item Even after several hundred games, Yahtzee is still challenging for human player.
+This makes it easy for many researchers to evaluate a certain decision of the algorithm.
+\item Even after several hundred games, Yahtzee is still challenging for a human player.
+It thereby represents a challenge, which goes bejond the development of a few best practice strategies.
 \item There is a mixture of randomness and strategy involved.
-\item Yahtzee is exactly solved, but this is far beyond the score of the abilities of a human brain.
+This makes it an interesting application which combines the reproducible domain of games
+with the influence of statistical uncertainty in real-life applications.
+\item Yahtzee is exactly solvable.
+The solution is far beyond the human abilities but can be used to evaluate the performance
+of the Q-learning implementation.
 \end{itemize}
 
 
 \section{The dice game Yahtzee}
+
 \subsection{Rules}
-\subsection{Code}
+\subsection{Implementation}
 Relate the rule with the different classes in the code.
 Especially: Dice, ScoreBoard, Game and AbstractPlayer
-\subsection{Existing literature}
+\subsection{Solutions and huristics}
+
 
 \section{Q-learning}
 This chapter contains all the theoretical background of the code.
