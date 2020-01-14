@@ -13,7 +13,7 @@
 \usepackage{microtype}      % microtypography
 \usepackage{lipsum}
 
-\title{Playing Yahtzee with deep reinforcement learning\\- a introductory guide}
+\title{Playing Yahtzee with deep reinforcement learning\\- a systematic comparison of different approaches}
 
 
 \author{
@@ -51,7 +51,7 @@
 \maketitle
 
 \begin{abstract}
-In this paper we present a Q-learning algorithm for the dice game yahtzee.
+In this paper we present an open source Q-learning algorithm for the dice game yahtzee.
 We implemented a variation of the Q-learning algorithm as used by Mnih \cite{mnih13},
 which he used for playing Atari games.
 The specific obstacles of yahtzee are thereby
@@ -75,9 +75,15 @@ The most successful implementation achieves superhuman performance within a few 
 
 
 \section{Introduction}
+
+The complete source code of this project is publicly available at
+\begin{center}
+  \url{https://github.com/markusdutschke/yahtzee}
+\end{center}
+
 Since Mnihs famous publication 'Playing Atari with deep reinforcement learning' \cite{mnih13}
 strong research interest has evolved around the possibilities of Q-learning in combination with neural networks.
-Especially computer and board games turned out to be an excellent playground for this research,
+Thereby computer and board games turned out to be an excellent playground for this research,
 due to their complex character, their easy reproducibility and the clear definition of the systems rules.
 
 Especially the dice game Yahtzee has a set of interesting properties,
@@ -90,6 +96,57 @@ which makes it especially suitable for a Q-learning test system.
 \item There is a mixture of randomness and strategy involved.
 \item Yahtzee is exactly solved, but this is far beyond the score of the abilities of a human brain.
 \end{itemize}
+
+
+\section{The dice game Yahtzee}
+\subsection{Rules}
+\subsection{Code}
+Relate the rule with the different classes in the code.
+Especially: Dice, ScoreBoard, Game and AbstractPlayer
+\subsection{Existing literature}
+
+\section{Q-learning}
+This chapter contains all the theoretical background of the code.
+\subsection{Background}
+\subsection{Handling the two decision types}
+\subsection{Information encoding}
+\subsection{Exploration}
+\subsection{Concepts to handle a stochastic system response}
+
+\section{Implementations}
+This chapter is just a description of the different implementations and their performance.
+\subsection{Naive Implementations}
+- random implementation
+- greedy implementation with and without re-roll
+\subsection{AI player Version 0}
+\subsection{AI player Version 1}
+\subsection{AI player Version 2}
+
+\section{Benchmark}
+In this chapter the benefit of different Q-learning concepts are quantitatively benchmarked.
+The implementation of these benchmarks can be found in the functions bench... in main.py with player implementations in botBench.py
+\subsection{Information encoding}
+Different encodings. Not yet sure, what to compare.
+Maybe: rgrSC with 
+- 13 inputs (-1 for empty, otherwise score)
+- 26 inputs (first 13: 0 for empty, second 13: 0 or 1 for empty and used)
+- a good encoding (check maybe player v2)
+\subsection{Exploration}
+- epsilon greedy
+- softmax
+- minMaxRat
+\subsection{Concepts to handle a stochastic system response}
+- implicitly in MLP regressor (v0)
+- explicitly in mlprgr with pretraining and benchmarking (this is v1)
+- exactly by lookup table (v2)
+
+
+\section{Conclusion}
+Collection of key facts, whatever turned out to bring the most significant improvement.
+
+
+
+\section{NOW FOLLOWS THE TEMPLATE}
 
 \section{Headings: first level}
 \label{sec:headings}
