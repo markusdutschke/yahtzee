@@ -168,33 +168,108 @@ This class fulfills mainly the purpose of clean code and
 is used to simulate a game, when just the two functions are available.
 
 The other subclasses of \emph{AbstractPlayer} are implementation of 
-specific players/strategies as described in section \ref{sec_impl}.
+specific players/strategies as described in section \ref{sec_players}.
 
 \subsection{Solutions and heuristics}
 
 
 \section{Q-learning}
-This chapter contains all the theoretical background of the code.
+This chapter contains the theoretical background and 
+explaines different techniques to achiev a faster convergence and more successfull game strategies.
+
 \subsection{Background}
 \subsection{Handling the two decision types}
-\subsection{Information encoding}
+
+\subsection{Encoding}
+TODO: general remarks about encoding
+
+The current dice configuration is always stored and handled in a sorted manner.
+This reduces the complexity of the setup and supports the convergence of the regressors.
+
+In the following, we explain a set of possible encodings for the different regressors.
+We will refer to these in section \ref{sec_players},
+when discussing the specific implementation of the different self-learning players.
+If the number of features or the encoding are not specified, this means, that there are different implementations used.
+
+For the chose-a-category regressor, we only need to forecast the rest score of the game,
+based only on the available categories on the score board and the upper sum (relevant for the bonus).
+\begin{itemize}
+\item category availability: the availability of each category on the score board; 13 features encoded as 0 or 1
+\item bonus: current sum of the upper half of the score board; 1 feature
+\end{itemize}
+This encoding is equivalent for all regressors of that kind.
+
+For the re-roll decision regressor the following additional encodings turned out to be worth considering:
+\begin{itemize}
+\item attempt: first or second re-roll attempt; 1 feature encoded as 0 or 1
+\item dice: the dice, which are held fixed (i.e. not being re-rolled); 5 features
+\item dice histogram: number of dice showing ones, twos, ...; 6 features
+\item sum of dice: sum of the values of all dice as entered in the category chance, 1 feature encoded $\mathrm{int} \in [5,30]$.
+\item n of a kind: number of different values, which are presented by exactly n dice; 1 feature for each $n \in \{1,2,3,4,5,6\}$
+\item helper small straight: some heuristic, intended to represent the chances of a small straight
+\item helper large straight: some heuristic, intended to represent the chances of a large straight
+\item statistical forecast: exact or heuristic forecast of the expected score in each category
+      based on the currently kept dice configuration; 13 features encoded as expectation value and as 0 if not available
+\end{itemize}
+
 \subsection{Exploration}
 \subsection{Concepts to handle a stochastic system response}
 
-\section{Implementations}
-\label{sec_impl}
+\section{Implementation of classic and ai players}
+\label{sec_players}
 In the following we describe the implementation of different players in \emph{lib/bot.py}.
 
 \subsection{Naive Implementations}
 - random implementation
 - greedy implementation with and without re-roll
+
+\subsection{Remarks about AI players}
+
+The AI players have a set of common / similar methods, which shall be explained here quickly.
+
+The \emph{eval\_options\_cat/reroll} method evaluates all possible actions
+(eigther choosing a category or choosing dice to re-roll)
+and returns an array consisting of the (action, evaluated benefit) tuples for each option.
+The method \emph{train} is used to train/configure the regressors based on a nGames training games.
+To ensure reproducibility, the random seed is set to the total number of training games for each trainig cicle.
+\emph{save} and \emph{load} are used to save and load a previously trained AI player.
+
+The also exists a set to different methods \emph{add\_to\_..RgrMem} and \emph{to\_repMem},
+which store the training game experience in the replay memory.
+This has some size limitation, which is defined as an arguement of \emph{\_\_init\_\_}.
+Based on this, the replay memory is also truncated at a point
+(eighter in \emph{truncate\_...} or at the end of \emph{to\_repMem}).
+
+As discussed in \ref{subsec_encoding}, the encoding of the current state is of crucial importance.
+For this reason each regressor has a corresponding method \emph{encode\_...},
+which just encodes the state of the current game situation (score board and dice)
+in the most compact and processible way.
+The corresponding property \emph{nFeat\_...} is a constant, 
+used in the methods \emph{encode} and \emph{train} and
+defines the dimensionality (number of features) of the regressor input.
+
 \subsection{AI player Version 0}
-\subsection{AI player Version 1}
-\subsection{AI player Version 2}
+%Performance
+This player reaches a maximum average score of 200.1 after 1053 training games
+(compare commit d68fc302a929101602ff95c609298ffcf6f86612).
+
+% Functionality
+We use two multi layer perceptron regressors (\emph{scrRgr} and \emph{rrRgr}).
+Both predict the rest score of the game (i.e. the final score minus the current score).
+This concept is updated in version 1.
+
+The encoding for the re-roll decision
+
+
+\subsection{AI player version 1}
+\subsection{AI player version 2}
 
 \section{Benchmark}
 In this chapter the benefit of different Q-learning concepts are quantitatively benchmarked.
 The implementation of these benchmarks can be found in the functions bench... in main.py with player implementations in botBench.py
+
+\subsection{Direct comparison of the AI players}
+Performance plots for version 0-2
 \subsection{Information encoding}
 Different encodings. Not yet sure, what to compare.
 Maybe: rgrSC with 
@@ -215,8 +290,8 @@ Maybe: rgrSC with
 Collection of key facts, whatever turned out to bring the most significant improvement.
 
 
-
-\section{NOW FOLLOWS THE TEMPLATE}
+\pagebreak
+\section{END OF ARTICLE - NOW FOLLOWS THE LATEX TEMPLATE}
 
 \section{Headings: first level}
 \label{sec:headings}

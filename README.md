@@ -4,12 +4,16 @@ In this project an AI-player for the famous dice game Yahtzee / Kniffel is creat
 which achieves a higher average score in 100 test games then the average human player.
 
 I therefor used a Q-Learning approach with deep neural networks (scikit-learn, MLP Regressor) and a Softmax exploration strategy.
+A documentation and scientific discussion can be found in `article_and_documentation/article.pdf`.
 
 ## Current status
 
 This is still work in progress.
 Currently super human performance with a score of 241.6 is achieved after 8000 training games.
-In future commits a documentation will be released, different techniques for reinforcement learning will be benchmarked and further optimizations will be tried.
+The `master` branch of this project stores the latest 'productive' version.
+The interested reader is also invited to have a look into the branch `workInProgrss`,
+where the most recent status is stored.
+The workInProgress-version is not necessarily working out of the box.
 
 ## Output
 
@@ -233,8 +237,9 @@ Note: training + benchmarks takes a few hours
 
 # Further material
 
-## probabilities for some combination
-http://www.brefeld.homepage.t-online.de/kniffel.html (German)
+## probabilities and strategies
+- http://www.brefeld.homepage.t-online.de/kniffel.html (German)
+- https://en.wikipedia.org/wiki/Yahtzee#Optimal_strategy
 
 ## simulator
 - http://yahtzee.holderied.de/

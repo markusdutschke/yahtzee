@@ -694,7 +694,7 @@ class PlayerAI_full_v0(AbstractPlayer):
     
     def eval_options_cat(self, scoreBoard, dice, debug=0):
         """Return a sorted list with the options to choose for cat and
-        the expected restScore.
+        the expected score for the rest of the game.
         """
         opts = []
         if debug==1:
@@ -726,6 +726,9 @@ class PlayerAI_full_v0(AbstractPlayer):
         return opts
     
     def eval_options_reroll(self, sb, dice, att):
+        """Return a sorted list with the options to choose for reroll and
+        the expected score.
+        """
         opts = []
         keepDices = []
         for reroll in product([True, False], repeat=5):
